@@ -1,6 +1,6 @@
 export class ArgvexError extends Error {
-    constructor(message?: string) {
-        super(`Invalid argument: ${message}.`)
+    constructor(argument: string) {
+        super(`Argument "${argument}" is unrecognized or misplaced.`)
     }
 }
 
@@ -108,8 +108,9 @@ const argvex = (options: ArgvexOptions): argvex => {
             }
             for (let j = 0; j < aliases.length; j++) {
                 const alias = aliases[j]
+                console.log(alias, definitions.get(alias))
                 if (strict && !definitions.has(alias)) {
-                    throw new ArgvexError(alias)
+                    throw new ArgvexError(`-${alias}`)
                 }
                 const inliner = inlineflag(j, aliases, definitions.get(alias))
                 if (inliner != null) {

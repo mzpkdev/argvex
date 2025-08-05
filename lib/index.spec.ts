@@ -135,10 +135,20 @@ describe(`argvex with schema`, () => {
             })
     })
 
-    it(`should throw an error if a flag is not present in the schema`, () => {
+    it(`should throw an error if a long flag is not present in the schema`, () => {
         const command = `brewer make latte --decaf --size xs --shots 0 --milk almond --tea black`
         expect(() => argvex({ command, schema, strict: true }))
             .toThrowError(ArgvexError)
+        expect(() => argvex({  command, schema, strict: true  }))
+            .toThrowError(`Argument "--tea" is unrecognized or misplaced.`)
+    })
+
+    it(`should throw an error if a short flag is not present in the schema`, () => {
+        const command = `brewer make latte -uds xs --shots 0 --milk almond`
+        expect(() => argvex({ command, schema, strict: true }))
+            .toThrowError(ArgvexError)
+        expect(() => argvex({  command, schema, strict: true  }))
+            .toThrowError(`Argument "-u" is unrecognized or misplaced.`)
     })
 
     it(`should not throw an error if all flags are present in the schema`, () => {
@@ -158,15 +168,19 @@ describe(`argvex with schema`, () => {
 })
 
 describe(`argvex edge cases`, () => {
-    it(`should not parse invalid command`, () => {
+    it(`should throw when parsing long flag without a name`, () => {
         const command = `brewer --=2xl`
         expect(() => argvex({ command }))
             .toThrowError(ArgvexError)
+        expect(() => argvex({ command }))
+            .toThrowError(`Argument "--=2xl" is unrecognized or misplaced.`)
     })
 
-    it(`should not parse invalid command`, () => {
+    it(`should throw when parsing short flag without a name`, () => {
         const command = `brewer -`
         expect(() => argvex({ command }))
             .toThrowError(ArgvexError)
+        expect(() => argvex({ command }))
+            .toThrowError(`Argument "-" is unrecognized or misplaced.`)
     })
 })
