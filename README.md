@@ -10,7 +10,7 @@
 <br>
 
 <p align="center">
-  <img src="./.github/assets/main-banner.gif" height="320" align="center" />
+  <img src="./.github/assets/main-banner.gif" height="160" align="center" />
   <p align="center">
     <strong>argvex</strong> is a lightweight and unopinionated CLI argument parser <br>  
       — just a parsing tool, not a framework
