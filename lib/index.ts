@@ -108,7 +108,6 @@ const argvex = (options: ArgvexOptions): argvex => {
             }
             for (let j = 0; j < aliases.length; j++) {
                 const alias = aliases[j]
-                console.log(alias, definitions.get(alias))
                 if (strict && !definitions.has(alias)) {
                     throw new ArgvexError(`-${alias}`)
                 }
