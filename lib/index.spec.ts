@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest"
 import argvex, { ArgvexError } from "./index"
 
 
-describe(`argvex without schema`, () => {
-    it(`should parse an empty command`, () => {
+describe("argvex without schema", () => {
+    it("should parse an empty command", () => {
         const command = ``
         expect(argvex({ command }))
             .toStrictEqual({
@@ -11,7 +11,7 @@ describe(`argvex without schema`, () => {
             })
     })
 
-    it(`should support end-of-options delimiter`, () => {
+    it("should support end-of-options delimiter", () => {
         const command = `brewer make --milk oat -- latte --not-a-flag`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -20,7 +20,7 @@ describe(`argvex without schema`, () => {
             })
     })
 
-    it(`should parse operands and long flags`, () => {
+    it("should parse operands and long flags", () => {
         const command = `brewer make latte --decaf --size xl --shots 2 --milk oat`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -32,7 +32,7 @@ describe(`argvex without schema`, () => {
             })
     })
 
-    it(`should parse operands and long flags using "=" for assigning a single value`, () => {
+    it("should parse operands and long flags using \"=\" for assigning a single value", () => {
         const command = `brewer make --decaf --size=xl --shots=2 --milk=oat latte`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -44,7 +44,7 @@ describe(`argvex without schema`, () => {
             })
     })
 
-    it(`should parse operands and short flags`, () => {
+    it("should parse operands and short flags", () => {
         const command = `brewer make latte -d -s xl -h 2 -m oat`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -56,7 +56,7 @@ describe(`argvex without schema`, () => {
             })
     })
 
-    it(`should parse operands and flags grouping`, () => {
+    it("should parse operands and flags grouping", () => {
         const command = `brewer make latte -qvd`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -67,7 +67,7 @@ describe(`argvex without schema`, () => {
             })
     })
 
-    it(`should parse operands and mix of long and short flags`, () => {
+    it("should parse operands and mix of long and short flags", () => {
         const command = `brewer make latte -ds xl --shots=2 --milk oat`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -79,7 +79,7 @@ describe(`argvex without schema`, () => {
             })
     })
 
-    it(`should parse flags only`, () => {
+    it("should parse flags only", () => {
         const command = `--decaf --size xl`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -90,7 +90,7 @@ describe(`argvex without schema`, () => {
     })
 })
 
-describe(`argvex with schema`, () => {
+describe("argvex with schema", () => {
     const schema = [
         { name: "version", alias: "v", arity: 0 },
         { name: "decaf", alias: "d", arity: 0 },
@@ -100,7 +100,7 @@ describe(`argvex with schema`, () => {
         { name: "name", alias: "n", arity: 1 }
     ]
 
-    it(`should assign that many values to flag as specified in schema`, () => {
+    it("should assign that many values to flag as specified in schema", () => {
         const command = `brewer make --decaf no --size xs --shots 0 --milk oat almond cow latte`
         expect(argvex({ command, schema }))
             .toStrictEqual({
@@ -112,7 +112,7 @@ describe(`argvex with schema`, () => {
             })
     })
 
-    it(`should parse short flags as aliases`, () => {
+    it("should parse short flags as aliases", () => {
         const command = `brewer make -d no -s xs -h 0 -m oat almond cow latte`
         expect(argvex({ command, schema }))
             .toStrictEqual({
@@ -124,7 +124,7 @@ describe(`argvex with schema`, () => {
             })
     })
 
-    it(`should be able to parse a single inline argument`, () => {
+    it("should be able to parse a single inline argument", () => {
         const command = `brewer make -vdnMatthew latte`
         expect(argvex({ command, schema }))
             .toStrictEqual({
@@ -135,7 +135,7 @@ describe(`argvex with schema`, () => {
             })
     })
 
-    it(`should throw an error if a long flag is not present in the schema`, () => {
+    it("should throw an error if a long flag is not present in the schema", () => {
         const command = `brewer make latte --decaf --size xs --shots 0 --milk almond --tea black`
         expect(() => argvex({ command, schema, strict: true }))
             .toThrowError(ArgvexError)
@@ -143,7 +143,7 @@ describe(`argvex with schema`, () => {
             .toThrowError(`Argument "--tea" is unrecognized or misplaced.`)
     })
 
-    it(`should throw an error if a short flag is not present in the schema`, () => {
+    it("should throw an error if a short flag is not present in the schema", () => {
         const command = `brewer make latte -uds xs --shots 0 --milk almond`
         expect(() => argvex({ command, schema, strict: true }))
             .toThrowError(ArgvexError)
@@ -151,13 +151,13 @@ describe(`argvex with schema`, () => {
             .toThrowError(`Argument "-u" is unrecognized or misplaced.`)
     })
 
-    it(`should not throw an error if all flags are present in the schema`, () => {
+    it("should not throw an error if all flags are present in the schema", () => {
         const command = `brewer make latte --decaf --size xs --shots 0 --milk almond`
         expect(() => argvex({ command, schema, strict: true }))
             .not.toThrowError(ArgvexError)
     })
 
-    it(`should accumulate repeated flags by default`, () => {
+    it("should accumulate repeated flags by default", () => {
         const command = `brewer make latte --milk oat --milk=almond -mcow`
         expect(argvex({ command, schema }))
             .toStrictEqual({
@@ -166,7 +166,7 @@ describe(`argvex with schema`, () => {
             })
     })
 
-    it(`should use last-write-wins when override is enabled`, () => {
+    it("should use last-write-wins when override is enabled", () => {
         const command = `brewer make latte --milk oat --milk=almond -mcow`
         expect(argvex({ command, schema, override: true }))
             .toStrictEqual({
@@ -176,8 +176,8 @@ describe(`argvex with schema`, () => {
     })
 })
 
-describe(`argvex edge cases`, () => {
-    it(`should throw when parsing long flag without a name`, () => {
+describe("argvex edge cases", () => {
+    it("should throw when parsing long flag without a name", () => {
         const command = `brewer --=2xl`
         expect(() => argvex({ command }))
             .toThrowError(ArgvexError)
@@ -185,7 +185,7 @@ describe(`argvex edge cases`, () => {
             .toThrowError(`Argument "--=2xl" is unrecognized or misplaced.`)
     })
 
-    it(`should throw when parsing short flag without a name`, () => {
+    it("should throw when parsing short flag without a name", () => {
         const command = `brewer -`
         expect(() => argvex({ command }))
             .toThrowError(ArgvexError)
@@ -193,7 +193,7 @@ describe(`argvex edge cases`, () => {
             .toThrowError(`Argument "-" is unrecognized or misplaced.`)
     })
 
-    it(`should treat everything after -- as positional`, () => {
+    it("should treat everything after -- as positional", () => {
         const command = `-- --flag -s value`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -201,7 +201,7 @@ describe(`argvex edge cases`, () => {
             })
     })
 
-    it(`should split on first = only and preserve the rest`, () => {
+    it("should split on first = only and preserve the rest", () => {
         const command = `--size=2xl=big`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -210,7 +210,7 @@ describe(`argvex edge cases`, () => {
             })
     })
 
-    it(`should treat empty value after = as an empty string`, () => {
+    it("should treat empty value after = as an empty string", () => {
         const command = `--size=`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -219,7 +219,7 @@ describe(`argvex edge cases`, () => {
             })
     })
 
-    it(`should collect all args as positionals when no flags are present`, () => {
+    it("should collect all args as positionals when no flags are present", () => {
         const command = `brewer make latte`
         expect(argvex({ command }))
             .toStrictEqual({
@@ -227,7 +227,7 @@ describe(`argvex edge cases`, () => {
             })
     })
 
-    it(`should use argv over command when both are provided`, () => {
+    it("should use argv over command when both are provided", () => {
         expect(argvex({ command: `--flag`, argv: [ "--other" ] }))
             .toStrictEqual({
                 _: [],
@@ -236,13 +236,13 @@ describe(`argvex edge cases`, () => {
     })
 })
 
-describe(`argvex edge cases with schema`, () => {
+describe("argvex edge cases with schema", () => {
     const schema = [
         { name: "decaf", alias: "d", arity: 0 },
         { name: "size", alias: "s", arity: 1 }
     ]
 
-    it(`should push next arg to positionals when flag has zero arity`, () => {
+    it("should push next arg to positionals when flag has zero arity", () => {
         const command = `--decaf oat`
         expect(argvex({ command, schema }))
             .toStrictEqual({
@@ -251,7 +251,7 @@ describe(`argvex edge cases with schema`, () => {
             })
     })
 
-    it(`should parse inline value after zero-arity flags in a group`, () => {
+    it("should parse inline value after zero-arity flags in a group", () => {
         const command = `-dsoat`
         expect(argvex({ command, schema }))
             .toStrictEqual({
@@ -261,7 +261,7 @@ describe(`argvex edge cases with schema`, () => {
             })
     })
 
-    it(`should accumulate values across long, =, short, and inline syntaxes`, () => {
+    it("should accumulate values across long, =, short, and inline syntaxes", () => {
         const command = `--size xl --size=md -sxs`
         expect(argvex({ command, schema }))
             .toStrictEqual({
@@ -270,7 +270,7 @@ describe(`argvex edge cases with schema`, () => {
             })
     })
 
-    it(`should keep only last value when override is enabled across mixed syntaxes`, () => {
+    it("should keep only last value when override is enabled across mixed syntaxes", () => {
         const command = `--size xl --size=md -sxs`
         expect(argvex({ command, schema, override: true }))
             .toStrictEqual({
