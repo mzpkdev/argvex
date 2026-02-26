@@ -85,7 +85,9 @@ const argvex = (options: ArgvexOptions): argvex => {
             break
         }
         if (arg.startsWith('--')) {
-            const [ name, value ] = arg.substring(2).split("=")
+            const eq = arg.indexOf("=", 2)
+            const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
+            const value = eq === -1 ? undefined : arg.substring(eq + 1)
             if (name.length == 0) {
                 throw new ArgvexError(arg)
             }
