@@ -207,8 +207,7 @@ const args = argvex({ schema })
 
 ### Repeating flags
 
-By default, repeating a flag will override its previous value.
-If you want values to accumulate instead, enable additive mode.
+By default, repeating a flag accumulates values into the array.
 
 ```sh
 brewer brew flat-white --milk steamed --milk foamed --milk microfoam
@@ -219,8 +218,15 @@ import argvex from 'argvex'
 const schema = [
   { name: "milk", arity: 3 },
 ]
-const args = argvex({ schema, additive: true })
+const args = argvex({ schema })
 // args -> { _: [ "brewer", "brew", "flat-white" ], milk: [ "steamed", "foamed", "microfoam" ] }
+```
+
+If you want last-write-wins behavior instead, enable override mode.
+
+```typescript
+const args = argvex({ schema, override: true })
+// args -> { _: [ "brewer", "brew", "flat-white" ], milk: [ "microfoam" ] }
 ```
 
 ### Strict Mode

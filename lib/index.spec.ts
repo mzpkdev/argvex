@@ -157,12 +157,21 @@ describe(`argvex with schema`, () => {
             .not.toThrowError(ArgvexError)
     })
 
-    it(`should support additive accumulation of flags`, () => {
+    it(`should accumulate repeated flags by default`, () => {
         const command = `brewer make latte --milk oat --milk=almond -mcow`
-        expect(argvex({ command, schema, additive: true }))
+        expect(argvex({ command, schema }))
             .toStrictEqual({
                 _: [ "brewer", "make", "latte" ],
                 milk: [ "oat", "almond", "cow" ]
+            })
+    })
+
+    it(`should use last-write-wins when override is enabled`, () => {
+        const command = `brewer make latte --milk oat --milk=almond -mcow`
+        expect(argvex({ command, schema, override: true }))
+            .toStrictEqual({
+                _: [ "brewer", "make", "latte" ],
+                milk: [ "cow" ]
             })
     })
 })

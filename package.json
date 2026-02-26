@@ -1,7 +1,7 @@
 {
   "name": "argvex",
   "description": "Lightweight and unopinionated CLI argument parser — just a parsing tool, not a framework",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "bin": {

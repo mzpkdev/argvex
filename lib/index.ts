@@ -13,7 +13,7 @@ export type ArgvexOptions = {
     argv?: string[]
     schema?: ArgvexSchema
     strict?: boolean
-    additive?: boolean
+    override?: boolean
 }
 
 export type argvex = {
@@ -65,7 +65,7 @@ const argvex = (options: ArgvexOptions): argvex => {
         argv = command?.split(" ").filter(arg => !!arg) ?? process.argv.slice(2),
         schema = [],
         strict = false,
-        additive = false
+        override = false
     } = options
     const definitions = new Map<string, Definition>()
     for (const { name, alias, arity = Infinity } of schema) {
@@ -94,7 +94,7 @@ const argvex = (options: ArgvexOptions): argvex => {
             }
             const { definition, values } = longflag(name, value, definitions.get(name))
             definitions.set(name, definition)
-            if (additive && flags[name] != null) {
+            if (!override && flags[name] != null) {
                 values.unshift(...flags[name])
             }
             current = { definition, values }
@@ -115,7 +115,7 @@ const argvex = (options: ArgvexOptions): argvex => {
                 if (inliner != null) {
                     const { definition, values } = inliner
                     definitions.set(alias, definition)
-                    if (additive && flags[definition.name] != null) {
+                    if (!override && flags[definition.name] != null) {
                         values.unshift(...flags[definition.name])
                     }
                     current = { definition, values }
@@ -124,7 +124,7 @@ const argvex = (options: ArgvexOptions): argvex => {
                 }
                 const { definition, values } = shortflag(alias, aliases, definitions.get(alias))
                 definitions.set(alias, definition)
-                if (additive && flags[definition.name] != null) {
+                if (!override && flags[definition.name] != null) {
                     values.unshift(...flags[definition.name])
                 }
                 current = { definition, values }
