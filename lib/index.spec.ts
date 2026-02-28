@@ -82,14 +82,14 @@ describe("argvex without schema", () => {
 })
 
 describe("argvex with schema", () => {
-    const schema = [
-        { name: "version", alias: "v", arity: 0 },
-        { name: "decaf", alias: "d", arity: 0 },
-        { name: "size", alias: "s", arity: 1 },
-        { name: "shots", alias: "h", arity: 1 },
-        { name: "milk", alias: "m", arity: 3 },
-        { name: "name", alias: "n", arity: 1 }
-    ]
+    const schema = {
+        version: { alias: "v", arity: 0 },
+        decaf: { alias: "d", arity: 0 },
+        size: { alias: "s", arity: 1 },
+        shots: { alias: "h", arity: 1 },
+        milk: { alias: "m", arity: 3 },
+        name: { alias: "n", arity: 1 }
+    }
 
     it("should assign that many values to flag as specified in schema", () => {
         const command = `brewer make --decaf no --size xs --shots 0 --milk oat almond cow latte`
@@ -222,10 +222,10 @@ describe("argvex edge cases", () => {
     })
 
     it("should have only names in known array, not aliases", () => {
-        const schema = [
-            { name: "decaf", alias: "d", arity: 0 },
-            { name: "size", alias: "s", arity: 1 }
-        ]
+        const schema = {
+            decaf: { alias: "d", arity: 0 },
+            size: { alias: "s", arity: 1 }
+        }
         try {
             argvex({ command: `--unknown`, schema, strict: true })
         } catch (error) {
@@ -273,10 +273,10 @@ describe("argvex edge cases", () => {
 })
 
 describe("argvex edge cases with schema", () => {
-    const schema = [
-        { name: "decaf", alias: "d", arity: 0 },
-        { name: "size", alias: "s", arity: 1 }
-    ]
+    const schema = {
+        decaf: { alias: "d", arity: 0 },
+        size: { alias: "s", arity: 1 }
+    }
 
     it("should push next arg to positionals when flag has zero arity", () => {
         const command = `--decaf oat`

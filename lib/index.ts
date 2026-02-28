@@ -9,19 +9,25 @@ export class ParseError extends Error {
     }
 }
 
-export type ArgvexSchema = { name: string; alias?: string; arity?: number }[]
+export type Flag = { alias?: string; arity?: number }
 
-export type ArgvexOptions = {
+export type ArgvexSchema = Record<string, Flag>
+
+type InferArgvex<TSchema extends ArgvexSchema | undefined> =
+    TSchema extends Record<infer K extends string, Flag>
+        ? string extends K
+            ? { _: string[]; [flag: string]: string[] }
+            : { _: string[] } & { [P in K]: string[] }
+        : { _: string[]; [flag: string]: string[] }
+
+export type ArgvexOptions<
+    TSchema extends ArgvexSchema | undefined = ArgvexSchema | undefined
+> = {
     command?: string
     argv?: string[]
-    schema?: ArgvexSchema
+    schema?: TSchema
     strict?: boolean
     override?: boolean
-}
-
-export type Argvex = {
-    _: string[]
-    [flag: string]: string[]
 }
 
 type Definition = {
@@ -74,22 +80,28 @@ const inlineflag = (
     return { definition, values: [aliases.substring(index + 1)] }
 }
 
-const argvex = (options: ArgvexOptions): Argvex => {
+const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
+    options: ArgvexOptions<TSchema>
+): InferArgvex<TSchema> => {
     const {
         command,
         argv = command?.split(" ").filter((arg) => !!arg) ??
             process.argv.slice(2),
-        schema = [],
+        schema = {},
         strict = false,
         override = false
     } = options
-    const known = schema.map((s) => s.name)
+    const known = Object.keys(schema)
     const definitions = new Map<string, Definition>()
-    for (const { name, alias, arity = Infinity } of schema) {
-        const definition = { name, alias, arity }
+    for (const [name, def] of Object.entries(schema)) {
+        const definition = {
+            name,
+            alias: def.alias,
+            arity: def.arity ?? Infinity
+        }
         definitions.set(name, definition)
-        if (alias != null) {
-            definitions.set(alias, definition)
+        if (def.alias != null) {
+            definitions.set(def.alias, definition)
         }
     }
     let current: { definition: Definition; values: string[] } | null = null
@@ -168,7 +180,7 @@ const argvex = (options: ArgvexOptions): Argvex => {
         }
         current?.values.push(arg)
     }
-    return { _, ...flags }
+    return { _, ...flags } as InferArgvex<TSchema>
 }
 
 export default argvex
