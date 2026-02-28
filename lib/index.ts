@@ -9,9 +9,7 @@ export class ParseError extends Error {
     }
 }
 
-export type ArgvexSchema = (
-    { name: string, alias?: string, arity?: number }
-)[]
+export type ArgvexSchema = { name: string; alias?: string; arity?: number }[]
 
 export type ArgvexOptions = {
     command?: string
@@ -21,7 +19,7 @@ export type ArgvexOptions = {
     override?: boolean
 }
 
-export type argvex = {
+export type Argvex = {
     _: string[]
     [flag: string]: string[]
 }
@@ -32,7 +30,11 @@ type Definition = {
     arity: number
 }
 
-const longflag = (name: string, value?: string, definition?: Definition): { definition: Definition, values: string[] } => {
+const longflag = (
+    name: string,
+    value?: string,
+    definition?: Definition
+): { definition: Definition; values: string[] } => {
     const values: string[] = []
     let arity = definition?.arity ?? Infinity
     if (value != null) {
@@ -42,37 +44,46 @@ const longflag = (name: string, value?: string, definition?: Definition): { defi
     return { definition: { name, ...definition, arity }, values }
 }
 
-const shortflag = (alias: string, aliases: string, definition?: Definition): { definition: Definition, values: string[] } => {
+const shortflag = (
+    alias: string,
+    aliases: string,
+    definition?: Definition
+): { definition: Definition; values: string[] } => {
     const values: string[] = []
     let arity = definition?.arity ?? Infinity
-    if (aliases.indexOf(alias) != aliases.length - 1) {
+    if (aliases.indexOf(alias) !== aliases.length - 1) {
         arity = 0
     }
     return { definition: { name: alias, ...definition, arity }, values }
 }
 
-const inlineflag = (index: number, aliases: string, definition?: Definition) => {
+const inlineflag = (
+    index: number,
+    aliases: string,
+    definition?: Definition
+) => {
     if (definition == null) {
         return null
     }
-    if (definition.arity == 0) {
+    if (definition.arity === 0) {
         return null
     }
     if (aliases[index + 1] == null) {
         return null
     }
-    return { definition, values: [ aliases.substring(index + 1) ] }
+    return { definition, values: [aliases.substring(index + 1)] }
 }
 
-const argvex = (options: ArgvexOptions): argvex => {
+const argvex = (options: ArgvexOptions): Argvex => {
     const {
         command,
-        argv = command?.split(" ").filter(arg => !!arg) ?? process.argv.slice(2),
+        argv = command?.split(" ").filter((arg) => !!arg) ??
+            process.argv.slice(2),
         schema = [],
         strict = false,
         override = false
     } = options
-    const known = schema.map(s => s.name)
+    const known = schema.map((s) => s.name)
     const definitions = new Map<string, Definition>()
     for (const { name, alias, arity = Infinity } of schema) {
         const definition = { name, alias, arity }
@@ -81,26 +92,30 @@ const argvex = (options: ArgvexOptions): argvex => {
             definitions.set(alias, definition)
         }
     }
-    let current: { definition: Definition, values: string[] } | null = null
+    let current: { definition: Definition; values: string[] } | null = null
     const _: string[] = []
     const flags: Record<string, string[]> = {}
-    for (let i = 0; i < argv.length; i++){
+    for (let i = 0; i < argv.length; i++) {
         const arg = argv[i]
-        if (arg == "--") {
+        if (arg === "--") {
             _.push(...argv.slice(i + 1))
             break
         }
-        if (arg.startsWith('--')) {
+        if (arg.startsWith("--")) {
             const eq = arg.indexOf("=", 2)
             const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
             const value = eq === -1 ? undefined : arg.substring(eq + 1)
-            if (name.length == 0) {
+            if (name.length === 0) {
                 throw new ParseError(arg, known)
             }
             if (strict && !definitions.has(name)) {
                 throw new ParseError(arg, known)
             }
-            const { definition, values } = longflag(name, value, definitions.get(name))
+            const { definition, values } = longflag(
+                name,
+                value,
+                definitions.get(name)
+            )
             definitions.set(name, definition)
             if (!override && flags[name] != null) {
                 values.unshift(...flags[name])
@@ -109,9 +124,9 @@ const argvex = (options: ArgvexOptions): argvex => {
             flags[name] = values
             continue
         }
-        if (arg.startsWith('-')) {
+        if (arg.startsWith("-")) {
             const aliases = arg.substring(1)
-            if (aliases.length == 0) {
+            if (aliases.length === 0) {
                 throw new ParseError(arg, known)
             }
             for (let j = 0; j < aliases.length; j++) {
@@ -130,7 +145,11 @@ const argvex = (options: ArgvexOptions): argvex => {
                     flags[definition.name] = values
                     break
                 }
-                const { definition, values } = shortflag(alias, aliases, definitions.get(alias))
+                const { definition, values } = shortflag(
+                    alias,
+                    aliases,
+                    definitions.get(alias)
+                )
                 definitions.set(alias, definition)
                 if (!override && flags[definition.name] != null) {
                     values.unshift(...flags[definition.name])
@@ -140,7 +159,10 @@ const argvex = (options: ArgvexOptions): argvex => {
             }
             continue
         }
-        if (current == null || current.values.length >= current.definition.arity) {
+        if (
+            current == null ||
+            current.values.length >= current.definition.arity
+        ) {
             _.push(arg)
             continue
         }
@@ -148,6 +170,5 @@ const argvex = (options: ArgvexOptions): argvex => {
     }
     return { _, ...flags }
 }
-
 
 export default argvex

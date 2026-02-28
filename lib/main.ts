@@ -1,6 +1,5 @@
 import argv from "./index"
 
-
 export async function main(...varargs: string[]): Promise<number> {
     try {
         console.log(argv({ argv: varargs }))
@@ -11,7 +10,13 @@ export async function main(...varargs: string[]): Promise<number> {
     }
 }
 
+const run = async () => {
+    try {
+        const code = await main(...process.argv.slice(2))
+        console.log(code)
+    } catch (error) {
+        console.log(error)
+    }
+}
 
-main(...process.argv.slice(2))
-    .then(code => console.log(code))
-    .catch(error => console.log(error))
+run()
