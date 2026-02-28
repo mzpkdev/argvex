@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import argvex, { ParseError } from "./index"
+import argvex, { ParseError, type ParseErrorCode } from "./index"
 
 describe("argvex without schema", () => {
     it("should parse an empty command", () => {
@@ -135,6 +135,9 @@ describe("argvex with schema", () => {
             argvex({ command, schema, strict: true })
         } catch (error) {
             expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).code).toBe(
+                "UNKNOWN_FLAG" satisfies ParseErrorCode
+            )
             expect((error as ParseError).argument).toBe("--tea")
             expect((error as ParseError).known).toStrictEqual([
                 "version",
@@ -159,6 +162,9 @@ describe("argvex with schema", () => {
             argvex({ command, schema, strict: true })
         } catch (error) {
             expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).code).toBe(
+                "UNKNOWN_FLAG" satisfies ParseErrorCode
+            )
             expect((error as ParseError).argument).toBe("-u")
             expect((error as ParseError).known).toStrictEqual([
                 "version",
@@ -196,20 +202,34 @@ describe("argvex with schema", () => {
 })
 
 describe("argvex edge cases", () => {
-    it("should throw when parsing long flag without a name", () => {
+    it("should throw INVALID_FORMAT when parsing long flag without a name", () => {
         const command = `brewer --=2xl`
         expect(() => argvex({ command })).toThrowError(ParseError)
         expect(() => argvex({ command })).toThrowError(
             `Argument "--=2xl" is unrecognized or misplaced.`
         )
+        try {
+            argvex({ command })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_FORMAT" satisfies ParseErrorCode
+            )
+        }
     })
 
-    it("should throw when parsing short flag without a name", () => {
+    it("should throw INVALID_FORMAT when parsing short flag without a name", () => {
         const command = `brewer -`
         expect(() => argvex({ command })).toThrowError(ParseError)
         expect(() => argvex({ command })).toThrowError(
             `Argument "-" is unrecognized or misplaced.`
         )
+        try {
+            argvex({ command })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_FORMAT" satisfies ParseErrorCode
+            )
+        }
     })
 
     it("should have empty known array when no schema is provided", () => {
@@ -217,6 +237,9 @@ describe("argvex edge cases", () => {
             argvex({ command: `brewer --=2xl` })
         } catch (error) {
             expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).code).toBe(
+                "INVALID_FORMAT" satisfies ParseErrorCode
+            )
             expect((error as ParseError).known).toStrictEqual([])
         }
     })
@@ -230,6 +253,9 @@ describe("argvex edge cases", () => {
             argvex({ command: `--unknown`, schema, strict: true })
         } catch (error) {
             expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).code).toBe(
+                "UNKNOWN_FLAG" satisfies ParseErrorCode
+            )
             expect((error as ParseError).known).toStrictEqual(["decaf", "size"])
         }
     })

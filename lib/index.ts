@@ -1,9 +1,13 @@
+export type ParseErrorCode = "UNKNOWN_FLAG" | "INVALID_FORMAT"
+
 export class ParseError extends Error {
+    code: ParseErrorCode
     argument: string
     known: string[]
 
-    constructor(argument: string, known: string[]) {
+    constructor(code: ParseErrorCode, argument: string, known: string[]) {
         super(`Argument "${argument}" is unrecognized or misplaced.`)
+        this.code = code
         this.argument = argument
         this.known = known
     }
@@ -118,10 +122,10 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
             const value = eq === -1 ? undefined : arg.substring(eq + 1)
             if (name.length === 0) {
-                throw new ParseError(arg, known)
+                throw new ParseError("INVALID_FORMAT", arg, known)
             }
             if (strict && !definitions.has(name)) {
-                throw new ParseError(arg, known)
+                throw new ParseError("UNKNOWN_FLAG", arg, known)
             }
             const { definition, values } = longflag(
                 name,
@@ -139,12 +143,12 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
         if (arg.startsWith("-")) {
             const aliases = arg.substring(1)
             if (aliases.length === 0) {
-                throw new ParseError(arg, known)
+                throw new ParseError("INVALID_FORMAT", arg, known)
             }
             for (let j = 0; j < aliases.length; j++) {
                 const alias = aliases[j]
                 if (strict && !definitions.has(alias)) {
-                    throw new ParseError(`-${alias}`, known)
+                    throw new ParseError("UNKNOWN_FLAG", `-${alias}`, known)
                 }
                 const inliner = inlineflag(j, aliases, definitions.get(alias))
                 if (inliner != null) {
