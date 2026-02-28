@@ -12,12 +12,18 @@
     "clean": "tsc --build --clean",
     "preprepare": "ts-patch install",
     "prepack": "npm run build",
-    "test": "vitest --no-watch"
+    "test": "vitest --no-watch",
+    "lint": "biome check .",
+    "lint:fix": "biome check --fix .",
+    "format": "biome format .",
+    "format:fix": "biome format --fix .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "tslib": "^2.6.3"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.4",
     "@types/node": "^22.4.0",
     "ts-patch": "^3.2.1",
     "typescript": "^5.5.4",
