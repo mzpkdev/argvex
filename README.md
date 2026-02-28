@@ -244,7 +244,7 @@ const schema = [
   { name: "shots", arity: 1 },
 ]
 const args = argvex({ schema, strict: true })
-// args -> ArgvexError
+// args -> ParseError
 ```
 
 ### Examples of common patters
@@ -300,13 +300,13 @@ if (args.temperature) {
 Wrap `argvex` calls in try-catch to handle parsing errors gracefully.
 
 ```typescript
-import argvex, { ArgvexError } from 'argvex'
+import argvex, { ParseError } from 'argvex'
 
 try {
     const args = argvex({ strict: true })
     // todo: process args here
 } catch (error) {
-    if (error instanceof ArgvexError) {
+    if (error instanceof ParseError) {
         console.error('Invalid command line arguments')
         process.exit(1)
     }

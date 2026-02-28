@@ -1,6 +1,11 @@
-export class ArgvexError extends Error {
-    constructor(argument: string) {
+export class ParseError extends Error {
+    argument: string
+    known: string[]
+
+    constructor(argument: string, known: string[]) {
         super(`Argument "${argument}" is unrecognized or misplaced.`)
+        this.argument = argument
+        this.known = known
     }
 }
 
@@ -67,6 +72,7 @@ const argvex = (options: ArgvexOptions): argvex => {
         strict = false,
         override = false
     } = options
+    const known = schema.map(s => s.name)
     const definitions = new Map<string, Definition>()
     for (const { name, alias, arity = Infinity } of schema) {
         const definition = { name, alias, arity }
@@ -89,10 +95,10 @@ const argvex = (options: ArgvexOptions): argvex => {
             const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
             const value = eq === -1 ? undefined : arg.substring(eq + 1)
             if (name.length == 0) {
-                throw new ArgvexError(arg)
+                throw new ParseError(arg, known)
             }
             if (strict && !definitions.has(name)) {
-                throw new ArgvexError(arg)
+                throw new ParseError(arg, known)
             }
             const { definition, values } = longflag(name, value, definitions.get(name))
             definitions.set(name, definition)
@@ -106,12 +112,12 @@ const argvex = (options: ArgvexOptions): argvex => {
         if (arg.startsWith('-')) {
             const aliases = arg.substring(1)
             if (aliases.length == 0) {
-                throw new ArgvexError(arg)
+                throw new ParseError(arg, known)
             }
             for (let j = 0; j < aliases.length; j++) {
                 const alias = aliases[j]
                 if (strict && !definitions.has(alias)) {
-                    throw new ArgvexError(`-${alias}`)
+                    throw new ParseError(`-${alias}`, known)
                 }
                 const inliner = inlineflag(j, aliases, definitions.get(alias))
                 if (inliner != null) {

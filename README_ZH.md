@@ -238,7 +238,7 @@ const schema = [
   { name: "shots", arity: 1 },
 ]
 const args = argvex({ schema, strict: true })
-// args -> ArgvexError
+// args -> ParseError
 ```
 
 ### 常见模式示例
@@ -294,13 +294,13 @@ if (args.temperature) {
 用 try-catch 包装 `argvex` 调用以优雅地处理解析错误。
 
 ```typescript
-import argvex, { ArgvexError } from 'argvex'
+import argvex, { ParseError } from 'argvex'
 
 try {
     const args = argvex({ strict: true })
     // todo: 在这里处理参数
 } catch (error) {
-    if (error instanceof ArgvexError) {
+    if (error instanceof ParseError) {
         console.error('无效的命令行参数')
         process.exit(1)
     }

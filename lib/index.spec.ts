@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import argvex, { ArgvexError } from "./index"
+import argvex, { ParseError } from "./index"
 
 
 describe("argvex without schema", () => {
@@ -138,23 +138,37 @@ describe("argvex with schema", () => {
     it("should throw an error if a long flag is not present in the schema", () => {
         const command = `brewer make latte --decaf --size xs --shots 0 --milk almond --tea black`
         expect(() => argvex({ command, schema, strict: true }))
-            .toThrowError(ArgvexError)
+            .toThrowError(ParseError)
         expect(() => argvex({ command, schema, strict: true }))
             .toThrowError(`Argument "--tea" is unrecognized or misplaced.`)
+        try {
+            argvex({ command, schema, strict: true })
+        } catch (error) {
+            expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).argument).toBe("--tea")
+            expect((error as ParseError).known).toStrictEqual(["version", "decaf", "size", "shots", "milk", "name"])
+        }
     })
 
     it("should throw an error if a short flag is not present in the schema", () => {
         const command = `brewer make latte -uds xs --shots 0 --milk almond`
         expect(() => argvex({ command, schema, strict: true }))
-            .toThrowError(ArgvexError)
+            .toThrowError(ParseError)
         expect(() => argvex({ command, schema, strict: true }))
             .toThrowError(`Argument "-u" is unrecognized or misplaced.`)
+        try {
+            argvex({ command, schema, strict: true })
+        } catch (error) {
+            expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).argument).toBe("-u")
+            expect((error as ParseError).known).toStrictEqual(["version", "decaf", "size", "shots", "milk", "name"])
+        }
     })
 
     it("should not throw an error if all flags are present in the schema", () => {
         const command = `brewer make latte --decaf --size xs --shots 0 --milk almond`
         expect(() => argvex({ command, schema, strict: true }))
-            .not.toThrowError(ArgvexError)
+            .not.toThrowError(ParseError)
     })
 
     it("should accumulate repeated flags by default", () => {
@@ -180,7 +194,7 @@ describe("argvex edge cases", () => {
     it("should throw when parsing long flag without a name", () => {
         const command = `brewer --=2xl`
         expect(() => argvex({ command }))
-            .toThrowError(ArgvexError)
+            .toThrowError(ParseError)
         expect(() => argvex({ command }))
             .toThrowError(`Argument "--=2xl" is unrecognized or misplaced.`)
     })
@@ -188,9 +202,31 @@ describe("argvex edge cases", () => {
     it("should throw when parsing short flag without a name", () => {
         const command = `brewer -`
         expect(() => argvex({ command }))
-            .toThrowError(ArgvexError)
+            .toThrowError(ParseError)
         expect(() => argvex({ command }))
             .toThrowError(`Argument "-" is unrecognized or misplaced.`)
+    })
+
+    it("should have empty known array when no schema is provided", () => {
+        try {
+            argvex({ command: `brewer --=2xl` })
+        } catch (error) {
+            expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).known).toStrictEqual([])
+        }
+    })
+
+    it("should have only names in known array, not aliases", () => {
+        const schema = [
+            { name: "decaf", alias: "d", arity: 0 },
+            { name: "size", alias: "s", arity: 1 }
+        ]
+        try {
+            argvex({ command: `--unknown`, schema, strict: true })
+        } catch (error) {
+            expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).known).toStrictEqual(["decaf", "size"])
+        }
     })
 
     it("should treat everything after -- as positional", () => {
