@@ -723,3 +723,110 @@ describe("argvex arity consumption", () => {
         })
     })
 })
+
+describe("argvex strict mode with arity", () => {
+    it("should consume next arg as value when flag has finite arity in strict mode", () => {
+        const schema = { output: { arity: 1 } }
+        const argv = "--output file.txt".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: [],
+            output: ["file.txt"]
+        })
+    })
+
+    it("should consume flag-like arg as value when flag has finite arity in strict mode", () => {
+        const schema = { name: { arity: 1 } }
+        const argv = "--name --value".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: [],
+            name: ["--value"]
+        })
+    })
+
+    it("should consume negative number as value in strict mode", () => {
+        const schema = { offset: { arity: 1 } }
+        const argv = "--offset -5".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: [],
+            offset: ["-5"]
+        })
+    })
+
+    it("should consume multiple args up to arity in strict mode", () => {
+        const schema = { range: { arity: 2 } }
+        const argv = "--range start end".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: [],
+            range: ["start", "end"]
+        })
+    })
+
+    it("should send excess args to positionals after arity exhausted in strict mode", () => {
+        const schema = { output: { arity: 1 } }
+        const argv = "--output file.txt extra.txt".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: ["extra.txt"],
+            output: ["file.txt"]
+        })
+    })
+
+    it("should stop consuming at next known flag even with remaining arity in strict mode", () => {
+        const schema = { include: { arity: 3 }, exclude: { arity: 1 } }
+        const argv = "--include src --exclude dist".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: [],
+            include: ["src"],
+            exclude: ["dist"]
+        })
+    })
+
+    it("should still throw UNKNOWN_FLAG for genuinely unknown flags in strict mode with arity", () => {
+        const schema = { output: { arity: 1 } }
+        const argv = "--output file.txt --unknown".split(" ")
+        expect(() => argvex({ argv, schema, strict: true })).toThrowError(
+            ParseError
+        )
+        expect(() => argvex({ argv, schema, strict: true })).toThrowError(
+            `Flag "--unknown" is not recognized.`
+        )
+    })
+
+    it("should give each invocation a fresh arity budget in strict mode", () => {
+        const schema = { include: { arity: 1 } }
+        const argv = "--include src --include lib --include test".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: [],
+            include: ["src", "lib", "test"]
+        })
+    })
+
+    it("should interleave arity-0 flags with positionals in strict mode", () => {
+        const schema = { verbose: { arity: 0 }, output: { arity: 1 } }
+        const argv = "file.txt --verbose --output out.txt extra.txt".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: ["file.txt", "extra.txt"],
+            verbose: [],
+            output: ["out.txt"]
+        })
+    })
+
+    it("should consume short flag alias value in strict mode", () => {
+        const schema = { output: { alias: "o", arity: 1 } }
+        const argv = "-o file.txt".split(" ")
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: [],
+            output: ["file.txt"]
+        })
+    })
+
+    it("should throw UNKNOWN_FLAG for unknown short flag in strict mode with arity schema", () => {
+        const schema = { output: { alias: "o", arity: 1 } }
+        const argv = "-o file.txt -x".split(" ")
+        expect(() => argvex({ argv, schema, strict: true })).toThrowError(
+            ParseError
+        )
+        expect(() => argvex({ argv, schema, strict: true })).toThrowError(
+            `Flag "-x" is not recognized.`
+        )
+    })
+})
