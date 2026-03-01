@@ -121,6 +121,30 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             _.push(...argv.slice(i + 1))
             break
         }
+        if (
+            current != null &&
+            current.consumed < current.arity &&
+            current.arity !== Infinity &&
+            !strict
+        ) {
+            let isKnownFlag = false
+            if (arg.startsWith("--") && arg.length > 2) {
+                const eq = arg.indexOf("=", 2)
+                const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
+                isKnownFlag = definitions.has(name)
+            } else if (
+                arg.startsWith("-") &&
+                arg.length > 1 &&
+                arg[1] !== "="
+            ) {
+                isKnownFlag = definitions.has(arg[1])
+            }
+            if (!isKnownFlag) {
+                current.target.push(arg)
+                current.consumed++
+                continue
+            }
+        }
         if (arg.startsWith("--")) {
             const eq = arg.indexOf("=", 2)
             const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)

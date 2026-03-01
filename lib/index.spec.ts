@@ -482,3 +482,199 @@ describe("argvex edge cases with schema", () => {
         })
     })
 })
+
+describe("argvex real-world scenarios", () => {
+    it("should consume negative number as value when flag has finite arity", () => {
+        const schema = { offset: { arity: 1 } }
+        const argv = "--offset -5".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            offset: ["-5"]
+        })
+    })
+
+    it("should treat negative number as flag without schema", () => {
+        const argv = "--offset -5".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: [],
+            offset: [],
+            5: []
+        })
+    })
+
+    it("should consume flag-like arg as value when flag has finite arity", () => {
+        const schema = { name: { arity: 1 } }
+        const argv = "--name --value".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            name: ["--value"]
+        })
+    })
+
+    it("should treat flag-like arg as flag without schema", () => {
+        const argv = "--name --value".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: [],
+            name: [],
+            value: []
+        })
+    })
+
+    it("should consume negative number as value via short alias with arity", () => {
+        const schema = { count: { alias: "n", arity: 1 } }
+        const argv = "-n -5".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            count: ["-5"]
+        })
+    })
+
+    it("should interleave positionals with arity-0 flags", () => {
+        const schema = { verbose: { arity: 0 } }
+        const argv = "file1.txt --verbose file2.txt".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["file1.txt", "file2.txt"],
+            verbose: []
+        })
+    })
+
+    it("should consume interleaved positional as flag value in schema-less mode", () => {
+        const argv = "file1.txt --verbose file2.txt".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: ["file1.txt"],
+            verbose: ["file2.txt"]
+        })
+    })
+
+    it("should honor = assignment even when arity is 0", () => {
+        const schema = { verbose: { arity: 0 } }
+        const argv = "--verbose=true".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            verbose: ["true"]
+        })
+    })
+
+    it("should treat unknown flags as greedy alongside schema-constrained flags", () => {
+        const schema = { size: { arity: 1 } }
+        const argv = "--unknown val1 val2 --size xl".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            unknown: ["val1", "val2"],
+            size: ["xl"]
+        })
+    })
+
+    it("should treat unknown short flag as greedy alongside known flags", () => {
+        const schema = { size: { arity: 1 } }
+        const argv = "-u val --size xl".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            u: ["val"],
+            size: ["xl"]
+        })
+    })
+
+    it("should stop parsing flags after -- delimiter between flags", () => {
+        const schema = { include: { arity: 1 }, exclude: { arity: 1 } }
+        const argv = "--include src -- --exclude foo".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["--exclude", "foo"],
+            include: ["src"]
+        })
+    })
+
+    it("should treat second -- as literal positional", () => {
+        const argv = "-- foo -- bar".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: ["foo", "--", "bar"]
+        })
+    })
+
+    it("should handle single -- with nothing after", () => {
+        const argv = ["--"]
+        expect(argvex({ argv })).toStrictEqual({
+            _: []
+        })
+    })
+
+    it("should not resolve alias when used as long flag prefix", () => {
+        const schema = {
+            decaf: { alias: "d", arity: 0 },
+            size: { alias: "s", arity: 1 }
+        }
+        const argv = "--d --s medium".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            d: [],
+            s: ["medium"]
+        })
+    })
+
+    it("should replace entire array when override is enabled with arity > 1", () => {
+        const schema = { milk: { arity: 2 } }
+        const argv = "--milk oat almond --milk soy rice".split(" ")
+        expect(argvex({ argv, schema, override: true })).toStrictEqual({
+            _: [],
+            milk: ["soy", "rice"]
+        })
+    })
+
+    it("should consume remaining group chars as inline value when middle flag has arity > 0", () => {
+        const schema = {
+            a: { alias: "a", arity: 0 },
+            b: { alias: "b", arity: 1 },
+            c: { alias: "c", arity: 0 }
+        }
+        const argv = ["-abc"]
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            a: [],
+            b: ["c"]
+        })
+    })
+
+    it("should not include unused schema flags in result", () => {
+        const schema = { size: { arity: 1 }, verbose: { arity: 0 } }
+        const argv = "--size xl".split(" ")
+        const result = argvex({ argv, schema })
+        expect(result).toStrictEqual({
+            _: [],
+            size: ["xl"]
+        })
+        expect("verbose" in result).toBe(false)
+    })
+
+    it("should return only positionals when argv is empty with schema", () => {
+        const schema = { verbose: { arity: 0 } }
+        expect(argvex({ argv: [], schema })).toStrictEqual({
+            _: []
+        })
+    })
+
+    it("should not throw in strict mode when only positionals are given", () => {
+        const schema = { verbose: { arity: 0 } }
+        const argv = "file.txt output.txt".split(" ")
+        expect(() => argvex({ argv, schema, strict: true })).not.toThrowError()
+        expect(argvex({ argv, schema, strict: true })).toStrictEqual({
+            _: ["file.txt", "output.txt"]
+        })
+    })
+
+    it("should accumulate repeated flags without schema", () => {
+        const argv = "--flag val1 --flag val2".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: [],
+            flag: ["val1", "val2"]
+        })
+    })
+
+    it("should parse hyphenated flag names", () => {
+        const argv = "--dry-run --output-dir ./dist".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: [],
+            "dry-run": [],
+            "output-dir": ["./dist"]
+        })
+    })
+})
