@@ -134,10 +134,12 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             )
             definitions.set(name, definition)
             if (!override && flags[name] != null) {
-                values.unshift(...flags[name])
+                flags[name].push(...values)
+                current = { definition, values: flags[name] }
+            } else {
+                current = { definition, values }
+                flags[name] = values
             }
-            current = { definition, values }
-            flags[name] = values
             continue
         }
         if (arg.startsWith("-")) {
@@ -155,10 +157,12 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     const { definition, values } = inliner
                     definitions.set(alias, definition)
                     if (!override && flags[definition.name] != null) {
-                        values.unshift(...flags[definition.name])
+                        flags[definition.name].push(...values)
+                        current = { definition, values: flags[definition.name] }
+                    } else {
+                        current = { definition, values }
+                        flags[definition.name] = values
                     }
-                    current = { definition, values }
-                    flags[definition.name] = values
                     break
                 }
                 const { definition, values } = shortflag(
@@ -168,10 +172,12 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 )
                 definitions.set(alias, definition)
                 if (!override && flags[definition.name] != null) {
-                    values.unshift(...flags[definition.name])
+                    flags[definition.name].push(...values)
+                    current = { definition, values: flags[definition.name] }
+                } else {
+                    current = { definition, values }
+                    flags[definition.name] = values
                 }
-                current = { definition, values }
-                flags[definition.name] = values
             }
             continue
         }
