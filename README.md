@@ -154,6 +154,30 @@ const args = argvex()
 // args -> { _: [ "brewer", "brew", "americano" ], "q": [], "s": [], m: [ "water" ], t: [ "85" ] }
 ```
 
+Short flags also support the `=` syntax for assigning values.
+
+```sh
+brewer brew latte -s=large -m=oat
+```
+```typescript
+import argvex from "argvex"
+
+const args = argvex()
+// args -> { _: [ "brewer", "brew", "latte" ], s: [ "large" ], m: [ "oat" ] }
+```
+
+This works with grouped flags too — the value is assigned to the last flag in the group.
+
+```sh
+brewer brew latte -ds=medium
+```
+```typescript
+import argvex from "argvex"
+
+const args = argvex()
+// args -> { _: [ "brewer", "brew", "latte" ], d: [], s: [ "medium" ] }
+```
+
 Use `--` (end-of-options delimiter) to separate flags from operands that might look like flags.
 
 ```sh

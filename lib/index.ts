@@ -159,6 +159,68 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             if (aliases.length === 0) {
                 throw new ParseError("INVALID_FORMAT", arg, known)
             }
+            const eq = aliases.indexOf("=")
+            if (eq !== -1) {
+                if (eq === 0) {
+                    throw new ParseError("INVALID_FORMAT", arg, known)
+                }
+                const flagChars = aliases.substring(0, eq)
+                const value = aliases.substring(eq + 1)
+                for (let j = 0; j < flagChars.length - 1; j++) {
+                    const alias = flagChars[j]
+                    if (strict && !definitions.has(alias)) {
+                        throw new ParseError("UNKNOWN_FLAG", `-${alias}`, known)
+                    }
+                    const { definition, values, arity } = shortflag(
+                        alias,
+                        flagChars,
+                        definitions.get(alias)
+                    )
+                    definitions.set(alias, definition)
+                    if (!override && flags[definition.name] != null) {
+                        flags[definition.name].push(...values)
+                        current = {
+                            arity,
+                            consumed: values.length,
+                            target: flags[definition.name]
+                        }
+                    } else {
+                        flags[definition.name] = values
+                        current = {
+                            arity,
+                            consumed: values.length,
+                            target: flags[definition.name]
+                        }
+                    }
+                }
+                const alias = flagChars[flagChars.length - 1]
+                if (strict && !definitions.has(alias)) {
+                    throw new ParseError("UNKNOWN_FLAG", `-${alias}`, known)
+                }
+                const defn = definitions.get(alias)
+                const definition = defn ?? {
+                    name: alias,
+                    arity: defn?.arity ?? Infinity
+                }
+                definitions.set(alias, definition)
+                const values = [value]
+                if (!override && flags[definition.name] != null) {
+                    flags[definition.name].push(...values)
+                    current = {
+                        arity: definition.arity,
+                        consumed: 1,
+                        target: flags[definition.name]
+                    }
+                } else {
+                    flags[definition.name] = values
+                    current = {
+                        arity: definition.arity,
+                        consumed: 1,
+                        target: flags[definition.name]
+                    }
+                }
+                continue
+            }
             for (let j = 0; j < aliases.length; j++) {
                 const alias = aliases[j]
                 if (strict && !definitions.has(alias)) {

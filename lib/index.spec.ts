@@ -253,6 +253,46 @@ describe("argvex edge cases", () => {
         }
     })
 
+    it("should parse short flag with = as value separator", () => {
+        const argv = "brewer -s=xl".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: ["brewer"],
+            s: ["xl"]
+        })
+    })
+
+    it("should parse grouped short flags with = value on last flag", () => {
+        const argv = "brewer -ab=xl".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: ["brewer"],
+            a: [],
+            b: ["xl"]
+        })
+    })
+
+    it("should parse short flag with = and empty value", () => {
+        const argv = "brewer -s=".split(" ")
+        expect(argvex({ argv })).toStrictEqual({
+            _: ["brewer"],
+            s: [""]
+        })
+    })
+
+    it("should throw INVALID_FORMAT when short flag = has no name", () => {
+        const argv = "brewer -=xl".split(" ")
+        expect(() => argvex({ argv })).toThrowError(ParseError)
+        expect(() => argvex({ argv })).toThrowError(
+            `Argument "-=xl" is malformed.`
+        )
+        try {
+            argvex({ argv })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_FORMAT" satisfies ParseErrorCode
+            )
+        }
+    })
+
     it("should have empty known array when no schema is provided", () => {
         try {
             argvex({ argv: "brewer --=2xl".split(" ") })
@@ -332,6 +372,15 @@ describe("argvex edge cases with schema", () => {
             _: [],
             decaf: [],
             size: ["oat"]
+        })
+    })
+
+    it("should parse short flag = syntax with schema alias", () => {
+        const argv = "-ds=medium".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            decaf: [],
+            size: ["medium"]
         })
     })
 
