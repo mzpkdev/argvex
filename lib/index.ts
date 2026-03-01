@@ -43,27 +43,29 @@ const longflag = (
     name: string,
     value?: string,
     definition?: Definition
-): { definition: Definition; values: string[] } => {
+): { definition: Definition; values: string[]; arity: number } => {
     const values: string[] = []
-    let arity = definition?.arity ?? Infinity
+    const arity = definition?.arity ?? Infinity
     if (value != null) {
         values.push(value)
-        arity = 1
+        return { definition: definition ?? { name, arity }, values, arity: 1 }
     }
-    return { definition: { name, ...definition, arity }, values }
+    return { definition: definition ?? { name, arity }, values, arity }
 }
 
 const shortflag = (
     alias: string,
     aliases: string,
     definition?: Definition
-): { definition: Definition; values: string[] } => {
+): { definition: Definition; values: string[]; arity: number } => {
     const values: string[] = []
-    let arity = definition?.arity ?? Infinity
-    if (aliases.indexOf(alias) !== aliases.length - 1) {
-        arity = 0
+    const defArity = definition?.arity ?? Infinity
+    const arity = aliases.indexOf(alias) !== aliases.length - 1 ? 0 : defArity
+    return {
+        definition: definition ?? { name: alias, arity: defArity },
+        values,
+        arity
     }
-    return { definition: { name: alias, ...definition, arity }, values }
 }
 
 const inlineflag = (
@@ -105,7 +107,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             definitions.set(def.alias, definition)
         }
     }
-    let current: { definition: Definition; values: string[] } | null = null
+    let current: { arity: number; values: string[] } | null = null
     const _: string[] = []
     const flags: Record<string, string[]> = {}
     for (let i = 0; i < argv.length; i++) {
@@ -124,7 +126,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             if (strict && !definitions.has(name)) {
                 throw new ParseError("UNKNOWN_FLAG", arg, known)
             }
-            const { definition, values } = longflag(
+            const { definition, values, arity } = longflag(
                 name,
                 value,
                 definitions.get(name)
@@ -132,9 +134,9 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             definitions.set(name, definition)
             if (!override && flags[name] != null) {
                 flags[name].push(...values)
-                current = { definition, values: flags[name] }
+                current = { arity, values: flags[name] }
             } else {
-                current = { definition, values }
+                current = { arity, values }
                 flags[name] = values
             }
             continue
@@ -155,14 +157,17 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     definitions.set(alias, definition)
                     if (!override && flags[definition.name] != null) {
                         flags[definition.name].push(...values)
-                        current = { definition, values: flags[definition.name] }
+                        current = {
+                            arity: definition.arity,
+                            values: flags[definition.name]
+                        }
                     } else {
-                        current = { definition, values }
+                        current = { arity: definition.arity, values }
                         flags[definition.name] = values
                     }
                     break
                 }
-                const { definition, values } = shortflag(
+                const { definition, values, arity } = shortflag(
                     alias,
                     aliases,
                     definitions.get(alias)
@@ -170,18 +175,15 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 definitions.set(alias, definition)
                 if (!override && flags[definition.name] != null) {
                     flags[definition.name].push(...values)
-                    current = { definition, values: flags[definition.name] }
+                    current = { arity, values: flags[definition.name] }
                 } else {
-                    current = { definition, values }
+                    current = { arity, values }
                     flags[definition.name] = values
                 }
             }
             continue
         }
-        if (
-            current == null ||
-            current.values.length >= current.definition.arity
-        ) {
+        if (current == null || current.values.length >= current.arity) {
             _.push(arg)
             continue
         }

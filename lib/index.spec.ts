@@ -17,7 +17,10 @@ describe("argvex without schema", () => {
     })
 
     it("should parse operands and long flags", () => {
-        const argv = "brewer make latte --decaf --size xl --shots 2 --milk oat".split(" ")
+        const argv =
+            "brewer make latte --decaf --size xl --shots 2 --milk oat".split(
+                " "
+            )
         expect(argvex({ argv })).toStrictEqual({
             _: ["brewer", "make", "latte"],
             decaf: [],
@@ -28,7 +31,10 @@ describe("argvex without schema", () => {
     })
 
     it('should parse operands and long flags using "=" for assigning a single value', () => {
-        const argv = "brewer make --decaf --size=xl --shots=2 --milk=oat latte".split(" ")
+        const argv =
+            "brewer make --decaf --size=xl --shots=2 --milk=oat latte".split(
+                " "
+            )
         expect(argvex({ argv })).toStrictEqual({
             _: ["brewer", "make", "latte"],
             decaf: [],
@@ -91,7 +97,10 @@ describe("argvex with schema", () => {
     }
 
     it("should assign that many values to flag as specified in schema", () => {
-        const argv = "brewer make --decaf no --size xs --shots 0 --milk oat almond cow latte".split(" ")
+        const argv =
+            "brewer make --decaf no --size xs --shots 0 --milk oat almond cow latte".split(
+                " "
+            )
         expect(argvex({ argv, schema })).toStrictEqual({
             _: ["brewer", "make", "no", "latte"],
             decaf: [],
@@ -102,7 +111,8 @@ describe("argvex with schema", () => {
     })
 
     it("should parse short flags as aliases", () => {
-        const argv = "brewer make -d no -s xs -h 0 -m oat almond cow latte".split(" ")
+        const argv =
+            "brewer make -d no -s xs -h 0 -m oat almond cow latte".split(" ")
         expect(argvex({ argv, schema })).toStrictEqual({
             _: ["brewer", "make", "no", "latte"],
             decaf: [],
@@ -123,7 +133,10 @@ describe("argvex with schema", () => {
     })
 
     it("should throw an error if a long flag is not present in the schema", () => {
-        const argv = "brewer make latte --decaf --size xs --shots 0 --milk almond --tea black".split(" ")
+        const argv =
+            "brewer make latte --decaf --size xs --shots 0 --milk almond --tea black".split(
+                " "
+            )
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
             ParseError
         )
@@ -150,7 +163,9 @@ describe("argvex with schema", () => {
     })
 
     it("should throw an error if a short flag is not present in the schema", () => {
-        const argv = "brewer make latte -uds xs --shots 0 --milk almond".split(" ")
+        const argv = "brewer make latte -uds xs --shots 0 --milk almond".split(
+            " "
+        )
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
             ParseError
         )
@@ -177,14 +192,19 @@ describe("argvex with schema", () => {
     })
 
     it("should not throw an error if all flags are present in the schema", () => {
-        const argv = "brewer make latte --decaf --size xs --shots 0 --milk almond".split(" ")
-        expect(() =>
-            argvex({ argv, schema, strict: true })
-        ).not.toThrowError(ParseError)
+        const argv =
+            "brewer make latte --decaf --size xs --shots 0 --milk almond".split(
+                " "
+            )
+        expect(() => argvex({ argv, schema, strict: true })).not.toThrowError(
+            ParseError
+        )
     })
 
     it("should accumulate repeated flags by default", () => {
-        const argv = "brewer make latte --milk oat --milk=almond -mcow".split(" ")
+        const argv = "brewer make latte --milk oat --milk=almond -mcow".split(
+            " "
+        )
         expect(argvex({ argv, schema })).toStrictEqual({
             _: ["brewer", "make", "latte"],
             milk: ["oat", "almond", "cow"]
@@ -192,7 +212,9 @@ describe("argvex with schema", () => {
     })
 
     it("should use last-write-wins when override is enabled", () => {
-        const argv = "brewer make latte --milk oat --milk=almond -mcow".split(" ")
+        const argv = "brewer make latte --milk oat --milk=almond -mcow".split(
+            " "
+        )
         expect(argvex({ argv, schema, override: true })).toStrictEqual({
             _: ["brewer", "make", "latte"],
             milk: ["cow"]
@@ -326,6 +348,33 @@ describe("argvex edge cases with schema", () => {
         expect(argvex({ argv, schema, override: true })).toStrictEqual({
             _: [],
             size: ["xs"]
+        })
+    })
+
+    it("should not corrupt arity when = syntax is followed by space syntax", () => {
+        const schema = { milk: { alias: "m", arity: 3 } }
+        const argv = "--milk=oat --milk steamed whole".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            milk: ["oat", "steamed", "whole"]
+        })
+    })
+
+    it("should not consume trailing positionals after = syntax", () => {
+        const schema = { milk: { alias: "m", arity: 3 } }
+        const argv = "--milk=oat latte".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["latte"],
+            milk: ["oat"]
+        })
+    })
+
+    it("should preserve arity across repeated = syntax", () => {
+        const schema = { milk: { alias: "m", arity: 3 } }
+        const argv = "--milk=oat --milk=almond --milk=cow".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            milk: ["oat", "almond", "cow"]
         })
     })
 })
