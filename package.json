@@ -19,9 +19,6 @@
     "format:fix": "biome format --fix .",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "tslib": "^2.6.3"
-  },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",
     "@types/node": "^22.4.0",

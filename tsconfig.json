@@ -8,14 +8,10 @@
     "composite": true,
     "incremental": true,
     "noEmitOnError": true,
-    "importHelpers": true,
-    "downlevelIteration": true,
     "newLine": "lf",
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "lib": [
       "es2024"
     ],
