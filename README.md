@@ -41,7 +41,7 @@ Table of Contents
   * [POSIX-flavoured](#posix-flavoured)
   * [Repeating flags](#repeating-flags)
   * [Strict Mode](#strict-mode)
-* [Examples of common patters](#examples-of-common-patters)
+* [Examples of common patterns](#examples-of-common-patterns)
   * [Case with required flags](#case-with-required-flags)
   * [Case with default values](#case-with-default-values)
   * [Case with value coercion](#case-with-value-coercion)
@@ -113,7 +113,7 @@ You can just call `argvex()` to get structured `process.argv` output.
 brewer brew espresso --size medium --shots 3 --milk none --temperature 92 --crema thick
 ```
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const args = argvex()
 // args -> { _: [ "brewer", "brew", "espresso" ], "size": [ "medium" ], shots: [ "3" ], milk: [ "none" ], temperature: [ "92" ], crema: [ "thick" ] }
@@ -125,19 +125,19 @@ A GNU-flavoured value assign using "=" works too!
 brewer brew cappuccino --size=large --shots=2 --milk=steamed --foam=thick
 ```
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const args = argvex()
 // args -> { _: [ "brewer", "brew", "cappuccino" ], "size": [ "large" ], shots: [ "2" ], milk: [ "steamed" ], foam: [ "thick" ] }
 ```
 
-When it comes to boolean flags, just check for their presence.
+Boolean flags are present or absent — no value needed.
 
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const args = argvex()
-if (!!args.decaf) {
+if (args.decaf) {
     console.log("Making a decaf coffee!")
 }
 ```
@@ -148,7 +148,7 @@ You can use standalone short flags or use them in groups.
 brewer brew americano -qs -m water -t 85
 ```
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const args = argvex()
 // args -> { _: [ "brewer", "brew", "americano" ], "q": [], "s": [], m: [ "water" ], t: [ "85" ] }
@@ -160,7 +160,7 @@ Use `--` (end-of-options delimiter) to separate flags from operands that might l
 brewer brew --milk oat -- --not-a-flag latte
 ```
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const args = argvex()
 // args -> { _: [ "brewer", "brew", "--not-a-flag", "latte" ], milk: [ "oat" ] }
@@ -175,7 +175,7 @@ While you can code your own support for aliases easily,
 brewer brew mocha -d -m oat -c dark
 ```
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const schema = {
   decaf: { alias: "d" },
@@ -194,7 +194,7 @@ While `argvex` aims at being a minimalist tool, it can support most of the POSIX
 brewer brew -dsmedium -h2 macchiato
 ```
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const schema = {
   decaf: { alias: "d", arity: 0 },
@@ -213,7 +213,7 @@ By default, repeating a flag accumulates values into the array.
 brewer brew flat-white --milk steamed --milk foamed --milk microfoam
 ```
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const schema = {
   milk: { arity: 3 },
@@ -237,7 +237,7 @@ You may force `argvex` to throw an error whenever unexpected flag or value gets 
 brewer brew cortado --size small --shots 1 --no-pay
 ```
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const schema = {
   size: { arity: 1 },
@@ -247,10 +247,9 @@ const args = argvex({ schema, strict: true })
 // args -> ParseError
 ```
 
-### Examples of common patters
+### Examples of common patterns
 
-`argvex` doesn't try to do anything more than parsing itself, so it's up to you how you want to handle the rest.   
-Here are some common patterns you might find useful.
+`argvex` gives you raw parsed data — defaults, coercion, and validation are yours to define however you want.
 
 #### Case with required flags
 
@@ -258,7 +257,7 @@ Sometimes you need to ensure certain flags are provided.
 You can check for their presence and throw an error if they're missing.
 
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const args = argvex()
 
@@ -272,27 +271,23 @@ if (!args.temperature) {
 When optional flags aren't provided, you can set sensible defaults.
 
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const args = argvex()
 
-if (!args.milk) {
-    args.milk = [ "steamed" ]
-}
+const milk = args.milk ?? "steamed"
 ```
 
 #### Case with value coercion
 
-Since `argvex` returns all values as strings, you'll often want to convert them to the appropriate types.
+Since `argvex` returns all values as strings, you can convert them to the types you need.
 
 ```typescript
-import argvex from 'argvex'
+import argvex from "argvex"
 
 const args = argvex()
 
-if (args.temperature) {
-    args.temperature = args.temperature.map(temperature => parseInt(temperature, 10))
-}
+const shots = args.shots.map(Number)
 ```
 
 #### Case with error handling
@@ -300,7 +295,7 @@ if (args.temperature) {
 Wrap `argvex` calls in try-catch to handle parsing errors gracefully.
 
 ```typescript
-import argvex, { ParseError } from 'argvex'
+import argvex, { ParseError } from "argvex"
 
 try {
     const args = argvex({ strict: true })
