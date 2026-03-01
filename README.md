@@ -177,11 +177,11 @@ brewer brew mocha -d -m oat -c dark
 ```typescript
 import argvex from 'argvex'
 
-const schema = [
-  { name: "decaf", alias: "d" },
-  { name: "milk", alias: "m" },
-  { name: "chocolate", alias: "c" }
-]
+const schema = {
+  decaf: { alias: "d" },
+  milk: { alias: "m" },
+  chocolate: { alias: "c" }
+}
 const args = argvex({ schema })
 // args -> { _: [ "brewer", "brew", "mocha" ], "decaf": [], milk: [ "oat" ], chocolate: [ "dark" ] }
 ```
@@ -196,11 +196,11 @@ brewer brew -dsmedium -h2 macchiato
 ```typescript
 import argvex from 'argvex'
 
-const schema = [
-  { name: "decaf", alias: "d", arity: 0 },
-  { name: "size", alias: "s", arity: 1 },
-  { name: "shots", alias: "h", arity: 1 },
-]
+const schema = {
+  decaf: { alias: "d", arity: 0 },
+  size: { alias: "s", arity: 1 },
+  shots: { alias: "h", arity: 1 },
+}
 const args = argvex({ schema })
 // args -> { _: [ "brewer", "brew", "macchiato" ], "decaf": [], size: [ "medium" ], shots: [ "2" ] }
 ```
@@ -215,9 +215,9 @@ brewer brew flat-white --milk steamed --milk foamed --milk microfoam
 ```typescript
 import argvex from 'argvex'
 
-const schema = [
-  { name: "milk", arity: 3 },
-]
+const schema = {
+  milk: { arity: 3 },
+}
 const args = argvex({ schema })
 // args -> { _: [ "brewer", "brew", "flat-white" ], milk: [ "steamed", "foamed", "microfoam" ] }
 ```
@@ -239,10 +239,10 @@ brewer brew cortado --size small --shots 1 --no-pay
 ```typescript
 import argvex from 'argvex'
 
-const schema = [
-  { name: "size", arity: 1 },
-  { name: "shots", arity: 1 },
-]
+const schema = {
+  size: { arity: 1 },
+  shots: { arity: 1 },
+}
 const args = argvex({ schema, strict: true })
 // args -> ParseError
 ```
