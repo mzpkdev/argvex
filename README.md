@@ -166,6 +166,8 @@ const args = argvex()
 // args -> { _: [ "brewer", "brew", "--not-a-flag", "latte" ], milk: [ "oat" ] }
 ```
 
+**Note on schema-less parsing:** Without a schema, every flag consumes all following arguments until the next flag or `--` is encountered. This means `--output file.txt input.txt` will assign both `file.txt` and `input.txt` to the `output` flag, not treat `input.txt` as a positional. To control consumption explicitly, use a schema with `arity` values — see [POSIX-flavoured](#posix-flavoured) and [Repeating flags](#repeating-flags) sections below.
+
 ### Aliases
 
 While you can code your own support for aliases easily, 
@@ -231,7 +233,7 @@ const args = argvex({ schema, override: true })
 
 ### Strict Mode
 
-You may force `argvex` to throw an error whenever unexpected flag or value gets passed.
+You may force `argvex` to throw an error whenever an unknown flag is passed.
 
 ```sh
 brewer brew cortado --size small --shots 1 --no-pay
