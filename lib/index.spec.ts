@@ -141,7 +141,7 @@ describe("argvex with schema", () => {
             ParseError
         )
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
-            `Argument "--tea" is unrecognized or misplaced.`
+            `Flag "--tea" is not recognized.`
         )
         try {
             argvex({ argv, schema, strict: true })
@@ -170,7 +170,7 @@ describe("argvex with schema", () => {
             ParseError
         )
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
-            `Argument "-u" is unrecognized or misplaced.`
+            `Flag "-u" is not recognized.`
         )
         try {
             argvex({ argv, schema, strict: true })
@@ -227,7 +227,7 @@ describe("argvex edge cases", () => {
         const argv = "brewer --=2xl".split(" ")
         expect(() => argvex({ argv })).toThrowError(ParseError)
         expect(() => argvex({ argv })).toThrowError(
-            `Argument "--=2xl" is unrecognized or misplaced.`
+            `Argument "--=2xl" is malformed.`
         )
         try {
             argvex({ argv })
@@ -242,7 +242,7 @@ describe("argvex edge cases", () => {
         const argv = "brewer -".split(" ")
         expect(() => argvex({ argv })).toThrowError(ParseError)
         expect(() => argvex({ argv })).toThrowError(
-            `Argument "-" is unrecognized or misplaced.`
+            `Argument "-" is malformed.`
         )
         try {
             argvex({ argv })

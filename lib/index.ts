@@ -6,7 +6,11 @@ export class ParseError extends Error {
     known: string[]
 
     constructor(code: ParseErrorCode, argument: string, known: string[]) {
-        super(`Argument "${argument}" is unrecognized or misplaced.`)
+        const messages: Record<ParseErrorCode, string> = {
+            UNKNOWN_FLAG: `Flag "${argument}" is not recognized.`,
+            INVALID_FORMAT: `Argument "${argument}" is malformed.`
+        }
+        super(messages[code])
         this.code = code
         this.argument = argument
         this.known = known
