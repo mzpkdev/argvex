@@ -111,10 +111,18 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             definitions.set(def.alias, definition)
         }
     }
-    let current: { arity: number; consumed: number; target: string[] } | null =
-        null
+    type Current = { arity: number; consumed: number; target: string[] } | null
+    let current = null as Current
     const _: string[] = []
     const flags: Record<string, string[]> = {}
+    const setFlag = (name: string, values: string[], arity: number) => {
+        if (!override && flags[name] != null) {
+            flags[name].push(...values)
+        } else {
+            flags[name] = values
+        }
+        current = { arity, consumed: values.length, target: flags[name] }
+    }
     for (let i = 0; i < argv.length; i++) {
         const arg = argv[i]
         if (arg === "--") {
@@ -161,22 +169,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 definitions.get(name)
             )
             definitions.set(name, definition)
-            const flagName = definition.name
-            if (!override && flags[flagName] != null) {
-                flags[flagName].push(...values)
-                current = {
-                    arity,
-                    consumed: values.length,
-                    target: flags[flagName]
-                }
-            } else {
-                flags[flagName] = values
-                current = {
-                    arity,
-                    consumed: values.length,
-                    target: flags[flagName]
-                }
-            }
+            setFlag(definition.name, values, arity)
             continue
         }
         if (arg.startsWith("-")) {
@@ -202,48 +195,18 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                         definitions.get(alias)
                     )
                     definitions.set(alias, definition)
-                    if (!override && flags[definition.name] != null) {
-                        flags[definition.name].push(...values)
-                        current = {
-                            arity,
-                            consumed: values.length,
-                            target: flags[definition.name]
-                        }
-                    } else {
-                        flags[definition.name] = values
-                        current = {
-                            arity,
-                            consumed: values.length,
-                            target: flags[definition.name]
-                        }
-                    }
+                    setFlag(definition.name, values, arity)
                 }
                 const alias = flagChars[flagChars.length - 1]
                 if (strict && !definitions.has(alias)) {
                     throw new ParseError("UNKNOWN_FLAG", `-${alias}`, known)
                 }
-                const defn = definitions.get(alias)
-                const definition = defn ?? {
+                const definition = definitions.get(alias) ?? {
                     name: alias,
-                    arity: defn?.arity ?? Infinity
+                    arity: Infinity
                 }
                 definitions.set(alias, definition)
-                const values = [value]
-                if (!override && flags[definition.name] != null) {
-                    flags[definition.name].push(...values)
-                    current = {
-                        arity: definition.arity,
-                        consumed: 1,
-                        target: flags[definition.name]
-                    }
-                } else {
-                    flags[definition.name] = values
-                    current = {
-                        arity: definition.arity,
-                        consumed: 1,
-                        target: flags[definition.name]
-                    }
-                }
+                setFlag(definition.name, [value], definition.arity)
                 continue
             }
             for (let j = 0; j < aliases.length; j++) {
@@ -255,21 +218,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 if (inliner != null) {
                     const { definition, values } = inliner
                     definitions.set(alias, definition)
-                    if (!override && flags[definition.name] != null) {
-                        flags[definition.name].push(...values)
-                        current = {
-                            arity: definition.arity,
-                            consumed: values.length,
-                            target: flags[definition.name]
-                        }
-                    } else {
-                        flags[definition.name] = values
-                        current = {
-                            arity: definition.arity,
-                            consumed: values.length,
-                            target: flags[definition.name]
-                        }
-                    }
+                    setFlag(definition.name, values, definition.arity)
                     break
                 }
                 const { definition, values, arity } = shortflag(
@@ -278,21 +227,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     definitions.get(alias)
                 )
                 definitions.set(alias, definition)
-                if (!override && flags[definition.name] != null) {
-                    flags[definition.name].push(...values)
-                    current = {
-                        arity,
-                        consumed: values.length,
-                        target: flags[definition.name]
-                    }
-                } else {
-                    flags[definition.name] = values
-                    current = {
-                        arity,
-                        consumed: values.length,
-                        target: flags[definition.name]
-                    }
-                }
+                setFlag(definition.name, values, arity)
             }
             continue
         }
