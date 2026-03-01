@@ -27,7 +27,6 @@ type InferArgvex<TSchema extends ArgvexSchema | undefined> =
 export type ArgvexOptions<
     TSchema extends ArgvexSchema | undefined = ArgvexSchema | undefined
 > = {
-    command?: string
     argv?: string[]
     schema?: TSchema
     strict?: boolean
@@ -88,9 +87,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
     options: ArgvexOptions<TSchema>
 ): InferArgvex<TSchema> => {
     const {
-        command,
-        argv = command?.split(" ").filter((arg) => !!arg) ??
-            process.argv.slice(2),
+        argv = process.argv.slice(2),
         schema = {},
         strict = false,
         override = false
