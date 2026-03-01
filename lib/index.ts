@@ -149,7 +149,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             const eq = arg.indexOf("=", 2)
             const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
             const value = eq === -1 ? undefined : arg.substring(eq + 1)
-            if (name.length === 0 || name.startsWith("-")) {
+            if (name.length === 0 || name.startsWith("-") || name === "_") {
                 throw new ParseError("INVALID_FORMAT", arg, known)
             }
             if (strict && !definitions.has(name)) {
@@ -161,19 +161,20 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 definitions.get(name)
             )
             definitions.set(name, definition)
-            if (!override && flags[name] != null) {
-                flags[name].push(...values)
+            const flagName = definition.name
+            if (!override && flags[flagName] != null) {
+                flags[flagName].push(...values)
                 current = {
                     arity,
                     consumed: values.length,
-                    target: flags[name]
+                    target: flags[flagName]
                 }
             } else {
-                flags[name] = values
+                flags[flagName] = values
                 current = {
                     arity,
                     consumed: values.length,
-                    target: flags[name]
+                    target: flags[flagName]
                 }
             }
             continue

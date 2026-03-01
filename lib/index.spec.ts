@@ -598,7 +598,7 @@ describe("argvex real-world scenarios", () => {
         })
     })
 
-    it("should not resolve alias when used as long flag prefix", () => {
+    it("should resolve alias when used as long flag prefix", () => {
         const schema = {
             decaf: { alias: "d", arity: 0 },
             size: { alias: "s", arity: 1 }
@@ -606,8 +606,8 @@ describe("argvex real-world scenarios", () => {
         const argv = "--d --s medium".split(" ")
         expect(argvex({ argv, schema })).toStrictEqual({
             _: [],
-            d: [],
-            s: ["medium"]
+            decaf: [],
+            size: ["medium"]
         })
     })
 
@@ -675,6 +675,51 @@ describe("argvex real-world scenarios", () => {
             _: [],
             "dry-run": [],
             "output-dir": ["./dist"]
+        })
+    })
+
+    it("should return empty values when flag with arity > 0 is last arg", () => {
+        const schema = { size: { arity: 1 } }
+        const argv = ["--size"]
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            size: []
+        })
+    })
+
+    it("should parse --no-verbose as a hyphenated flag name, not negation", () => {
+        const argv = ["--no-verbose"]
+        expect(argvex({ argv })).toStrictEqual({
+            _: [],
+            "no-verbose": []
+        })
+    })
+
+    it("should reject --_ as a reserved flag name", () => {
+        const argv = "--_ value pos1".split(" ")
+        expect(() => argvex({ argv })).toThrowError(ParseError)
+        expect(() => argvex({ argv })).toThrowError(
+            `Argument "--_" is malformed.`
+        )
+    })
+
+    it("should parse single-char long flag as a regular flag", () => {
+        const argv = ["--v"]
+        expect(argvex({ argv })).toStrictEqual({
+            _: [],
+            v: []
+        })
+    })
+
+    it("should let last schema entry win when aliases collide", () => {
+        const schema = {
+            verbose: { alias: "v", arity: 0 },
+            version: { alias: "v", arity: 0 }
+        }
+        const argv = ["-v"]
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            version: []
         })
     })
 })
