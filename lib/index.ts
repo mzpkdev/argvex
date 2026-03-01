@@ -125,7 +125,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             const eq = arg.indexOf("=", 2)
             const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
             const value = eq === -1 ? undefined : arg.substring(eq + 1)
-            if (name.length === 0) {
+            if (name.length === 0 || name.startsWith("-")) {
                 throw new ParseError("INVALID_FORMAT", arg, known)
             }
             if (strict && !definitions.has(name)) {
