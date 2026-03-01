@@ -13,9 +13,9 @@ export async function main(...varargs: string[]): Promise<number> {
 const run = async () => {
     try {
         const code = await main(...process.argv.slice(2))
-        console.log(code)
+        process.exit(code)
     } catch (error) {
-        console.log(error)
+        console.error(error)
     }
 }
 

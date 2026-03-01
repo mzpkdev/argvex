@@ -1,3 +1,3 @@
-mkvbot@echo off
+@echo off
 
 node "%~dp0\run" %*

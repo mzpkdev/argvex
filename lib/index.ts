@@ -25,7 +25,7 @@ type InferArgvex<TSchema extends ArgvexSchema | undefined> =
     TSchema extends Record<infer K extends string, Flag>
         ? string extends K
             ? { _: string[]; [flag: string]: string[] }
-            : { _: string[] } & { [P in K]: string[] }
+            : { _: string[] } & Partial<{ [P in K]: string[] }>
         : { _: string[]; [flag: string]: string[] }
 
 export type ArgvexOptions<
@@ -90,7 +90,7 @@ const inlineflag = (
 }
 
 const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
-    options: ArgvexOptions<TSchema>
+    options: ArgvexOptions<TSchema> = {}
 ): InferArgvex<TSchema> => {
     const {
         argv = process.argv.slice(2),
@@ -216,7 +216,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
         current.target.push(arg)
         current.consumed++
     }
-    return { _, ...flags } as InferArgvex<TSchema>
+    return { ...flags, _ } as InferArgvex<TSchema>
 }
 
 export default argvex
