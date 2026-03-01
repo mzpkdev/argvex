@@ -377,4 +377,59 @@ describe("argvex edge cases with schema", () => {
             milk: ["oat", "almond", "cow"]
         })
     })
+
+    it("should give each invocation a fresh arity budget (arity 1, repeated)", () => {
+        const schema = { include: { arity: 1 } }
+        const argv = "--include src --include lib --include test".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            include: ["src", "lib", "test"]
+        })
+    })
+
+    it("should give each invocation a fresh arity budget (arity 3, repeated)", () => {
+        const schema = { include: { arity: 3 } }
+        const argv = "--include src lib test --include a b c".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            include: ["src", "lib", "test", "a", "b", "c"]
+        })
+    })
+
+    it("should send excess args to positionals after arity is exhausted", () => {
+        const schema = { milk: { alias: "m", arity: 1 } }
+        const argv = "--milk steamed whole oat".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["whole", "oat"],
+            milk: ["steamed"]
+        })
+    })
+
+    it("should stop consuming at next flag even with remaining arity budget", () => {
+        const schema = { include: { arity: 2 } }
+        const argv = "--include src --include lib --include test".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            include: ["src", "lib", "test"]
+        })
+    })
+
+    it("should stop consuming at a different flag", () => {
+        const schema = { include: { arity: 3 }, exclude: { arity: 3 } }
+        const argv = "--include src lib --exclude foo".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            include: ["src", "lib"],
+            exclude: ["foo"]
+        })
+    })
+
+    it("should replace values when override is enabled with repeated flags", () => {
+        const schema = { include: { arity: 1 } }
+        const argv = "--include src --include lib --include test".split(" ")
+        expect(argvex({ argv, schema, override: true })).toStrictEqual({
+            _: [],
+            include: ["test"]
+        })
+    })
 })

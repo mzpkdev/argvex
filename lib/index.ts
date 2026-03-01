@@ -107,7 +107,8 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             definitions.set(def.alias, definition)
         }
     }
-    let current: { arity: number; values: string[] } | null = null
+    let current: { arity: number; consumed: number; target: string[] } | null =
+        null
     const _: string[] = []
     const flags: Record<string, string[]> = {}
     for (let i = 0; i < argv.length; i++) {
@@ -134,10 +135,18 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             definitions.set(name, definition)
             if (!override && flags[name] != null) {
                 flags[name].push(...values)
-                current = { arity, values: flags[name] }
+                current = {
+                    arity,
+                    consumed: values.length,
+                    target: flags[name]
+                }
             } else {
-                current = { arity, values }
                 flags[name] = values
+                current = {
+                    arity,
+                    consumed: values.length,
+                    target: flags[name]
+                }
             }
             continue
         }
@@ -159,11 +168,16 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                         flags[definition.name].push(...values)
                         current = {
                             arity: definition.arity,
-                            values: flags[definition.name]
+                            consumed: values.length,
+                            target: flags[definition.name]
                         }
                     } else {
-                        current = { arity: definition.arity, values }
                         flags[definition.name] = values
+                        current = {
+                            arity: definition.arity,
+                            consumed: values.length,
+                            target: flags[definition.name]
+                        }
                     }
                     break
                 }
@@ -175,19 +189,28 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 definitions.set(alias, definition)
                 if (!override && flags[definition.name] != null) {
                     flags[definition.name].push(...values)
-                    current = { arity, values: flags[definition.name] }
+                    current = {
+                        arity,
+                        consumed: values.length,
+                        target: flags[definition.name]
+                    }
                 } else {
-                    current = { arity, values }
                     flags[definition.name] = values
+                    current = {
+                        arity,
+                        consumed: values.length,
+                        target: flags[definition.name]
+                    }
                 }
             }
             continue
         }
-        if (current == null || current.values.length >= current.arity) {
+        if (current == null || current.consumed >= current.arity) {
             _.push(arg)
             continue
         }
-        current?.values.push(arg)
+        current.target.push(arg)
+        current.consumed++
     }
     return { _, ...flags } as InferArgvex<TSchema>
 }
