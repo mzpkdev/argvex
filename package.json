@@ -18,7 +18,7 @@
     "lint:fix": "biome check --fix .",
     "format": "biome format .",
     "format:fix": "biome format --fix .",
-    "typmecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",

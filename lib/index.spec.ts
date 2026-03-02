@@ -133,10 +133,7 @@ describe("argvex with schema", () => {
     })
 
     it("should throw an error if a long flag is not present in the schema", () => {
-        const argv =
-            "brewer make latte --decaf --size xs --shots 0 --milk almond --tea black".split(
-                " "
-            )
+        const argv = "brewer make latte --decaf --tea black".split(" ")
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
             ParseError
         )

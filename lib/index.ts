@@ -148,8 +148,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
         if (
             current != null &&
             current.consumed < current.arity &&
-            current.arity !== Infinity &&
-            !strict
+            current.arity !== Infinity
         ) {
             let isKnownFlag = false
             if (arg.startsWith("--") && arg.length > 2) {
