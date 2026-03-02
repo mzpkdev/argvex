@@ -652,18 +652,6 @@ describe("argvex edge cases with schema", () => {
             size: []
         })
     })
-
-    it("should let last schema entry win when aliases collide", () => {
-        const schema = {
-            verbose: { alias: "v", arity: 0 },
-            version: { alias: "v", arity: 0 }
-        }
-        const argv = ["-v"]
-        expect(argvex({ argv, schema })).toStrictEqual({
-            _: [],
-            version: []
-        })
-    })
 })
 
 describe("argvex arity consumption", () => {
@@ -828,5 +816,106 @@ describe("argvex strict mode with arity", () => {
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
             `Flag "-x" is not recognized.`
         )
+    })
+})
+
+describe("argvex schema validation", () => {
+    it("should throw INVALID_SCHEMA for multi-character alias", () => {
+        const schema = { verbose: { alias: "verb" } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        expect(() => argvex({ argv: [], schema })).toThrowError(
+            `Schema definition for "verbose" is invalid.`
+        )
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("verbose")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for empty string alias", () => {
+        const schema = { verbose: { alias: "" } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        expect(() => argvex({ argv: [], schema })).toThrowError(
+            `Schema definition for "verbose" is invalid.`
+        )
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("verbose")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for negative arity", () => {
+        const schema = { verbose: { arity: -1 } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        expect(() => argvex({ argv: [], schema })).toThrowError(
+            `Schema definition for "verbose" is invalid.`
+        )
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("verbose")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for duplicate alias across entries", () => {
+        const schema = { verbose: { alias: "v" }, version: { alias: "v" } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        expect(() => argvex({ argv: [], schema })).toThrowError(
+            `Schema definition for "version" is invalid.`
+        )
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("version")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA when alias collides with another flag name", () => {
+        const schema = { verbose: { alias: "v" }, v: {} }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+        }
+    })
+
+    it("should accept a valid schema with aliases and arity", () => {
+        const schema = {
+            verbose: { alias: "v", arity: 0 },
+            output: { alias: "o", arity: 1 }
+        }
+        expect(() => argvex({ argv: [], schema })).not.toThrowError()
+    })
+
+    it("should accept a schema with no aliases or arity", () => {
+        const schema = { verbose: {} }
+        expect(() => argvex({ argv: [], schema })).not.toThrowError()
+    })
+
+    it("should accept a single-character alias", () => {
+        const schema = { verbose: { alias: "v" } }
+        expect(() => argvex({ argv: [], schema })).not.toThrowError()
+    })
+
+    it("should accept zero arity", () => {
+        const schema = { verbose: { arity: 0 } }
+        expect(() => argvex({ argv: [], schema })).not.toThrowError()
     })
 })

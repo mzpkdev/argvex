@@ -2,6 +2,7 @@
   "name": "argvex",
   "description": "Lightweight and unopinionated CLI argument parser — just a parsing tool, not a framework",
   "version": "0.1.0",
+  "engines": { "node": ">=18" },
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "bin": {
@@ -17,7 +18,7 @@
     "lint:fix": "biome check --fix .",
     "format": "biome format .",
     "format:fix": "biome format --fix .",
-    "typecheck": "tsc --noEmit"
+    "typmecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.4",

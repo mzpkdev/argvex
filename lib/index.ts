@@ -1,4 +1,7 @@
-export type ParseErrorCode = "UNKNOWN_FLAG" | "INVALID_FORMAT"
+export type ParseErrorCode =
+    | "UNKNOWN_FLAG"
+    | "INVALID_FORMAT"
+    | "INVALID_SCHEMA"
 
 export class ParseError extends Error {
     code: ParseErrorCode
@@ -8,7 +11,8 @@ export class ParseError extends Error {
     constructor(code: ParseErrorCode, argument: string, known: string[]) {
         const messages: Record<ParseErrorCode, string> = {
             UNKNOWN_FLAG: `Flag "${argument}" is not recognized.`,
-            INVALID_FORMAT: `Argument "${argument}" is malformed.`
+            INVALID_FORMAT: `Argument "${argument}" is malformed.`,
+            INVALID_SCHEMA: `Schema definition for "${argument}" is invalid.`
         }
         super(messages[code])
         this.code = code
@@ -101,6 +105,18 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
     const known = Object.keys(schema)
     const definitions = new Map<string, Definition>()
     for (const [name, def] of Object.entries(schema)) {
+        if (def.alias != null && def.alias.length !== 1) {
+            throw new ParseError("INVALID_SCHEMA", name, known)
+        }
+        if (def.arity != null && def.arity < 0) {
+            throw new ParseError("INVALID_SCHEMA", name, known)
+        }
+        if (
+            definitions.has(name) ||
+            (def.alias != null && definitions.has(def.alias))
+        ) {
+            throw new ParseError("INVALID_SCHEMA", name, known)
+        }
         const definition = {
             name,
             alias: def.alias,
