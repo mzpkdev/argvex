@@ -231,6 +231,21 @@ const args = argvex({ schema })
 // args -> { _: [ "brewer", "brew", "macchiato" ], "decaf": [], size: [ "medium" ], shots: [ "2" ] }
 ```
 
+`arity` controls how many values a flag consumes from the argument stream — the tokens that follow it. The `=` syntax (`--flag=value`) is direct assignment: the value is embedded in the token itself, so it bypasses stream consumption entirely. This means `--verbose=true` assigns `"true"` to `verbose` regardless of its `arity` setting — even `arity: 0`.
+
+```sh
+brewer brew espresso --verbose=true
+```
+```typescript
+import argvex from "argvex"
+
+const schema = {
+  verbose: { arity: 0 },
+}
+const args = argvex({ schema })
+// args -> { _: [ "brewer", "brew", "espresso" ], verbose: [ "true" ] }
+```
+
 ### Repeating flags
 
 By default, repeating a flag accumulates values into the array.
