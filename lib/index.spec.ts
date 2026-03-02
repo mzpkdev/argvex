@@ -915,4 +915,140 @@ describe("argvex schema validation", () => {
         const schema = { verbose: { arity: 0 } }
         expect(() => argvex({ argv: [], schema })).not.toThrowError()
     })
+
+    it("should throw INVALID_SCHEMA for schema key _", () => {
+        const schema = { _: { arity: 1 } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe("INVALID_SCHEMA")
+            expect((error as ParseError).argument).toBe("_")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for alias _", () => {
+        const schema = { verbose: { alias: "_" } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe("INVALID_SCHEMA")
+            expect((error as ParseError).argument).toBe("verbose")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for alias -", () => {
+        const schema = { verbose: { alias: "-" } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe("INVALID_SCHEMA")
+            expect((error as ParseError).argument).toBe("verbose")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for arity NaN", () => {
+        const schema = { flag: { arity: NaN } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe("INVALID_SCHEMA")
+            expect((error as ParseError).argument).toBe("flag")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for fractional arity", () => {
+        const schema = { flag: { arity: 1.5 } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe("INVALID_SCHEMA")
+            expect((error as ParseError).argument).toBe("flag")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for Infinity arity", () => {
+        const schema = { flag: { arity: Infinity } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe("INVALID_SCHEMA")
+            expect((error as ParseError).argument).toBe("flag")
+        }
+    })
+})
+
+describe("argvex test coverage gaps", () => {
+    it("should parse prototype property as flag name without crashing", () => {
+        const argv = "--constructor val".split(" ")
+        expect(argvex({ argv })).toEqual({
+            _: [],
+            constructor: ["val"]
+        })
+    })
+
+    it("should parse toString as flag name without crashing", () => {
+        const argv = "--toString val".split(" ")
+        expect(argvex({ argv })).toEqual({
+            _: [],
+            toString: ["val"]
+        })
+    })
+
+    it("should handle duplicate chars in flag group with arity", () => {
+        const schema = { v: { arity: 1 } }
+        const argv = "-vvv nextval".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["nextval"],
+            v: ["vv"]
+        })
+    })
+
+    it("should let last duplicate char in group consume from stream", () => {
+        const schema = { v: { arity: 0 } }
+        const argv = "-vvv nextval".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["nextval"],
+            v: []
+        })
+    })
+
+    it("should use last-write-wins with override and no schema", () => {
+        const argv = "--flag val1 --flag val2".split(" ")
+        expect(argvex({ argv, override: true })).toStrictEqual({
+            _: [],
+            flag: ["val2"]
+        })
+    })
+
+    it("should throw UNKNOWN_FLAG with strict and empty schema", () => {
+        const argv = ["--anything"]
+        expect(() => argvex({ argv, schema: {}, strict: true })).toThrowError(
+            ParseError
+        )
+        expect(() => argvex({ argv, schema: {}, strict: true })).toThrowError(
+            `Flag "--anything" is not recognized.`
+        )
+    })
+
+    it("should treat empty string in argv as positional", () => {
+        const argv = [""]
+        expect(argvex({ argv })).toStrictEqual({
+            _: [""]
+        })
+    })
+
+    it("should handle grouped flags where all chars have arity > 0", () => {
+        const schema = { a: { arity: 1 }, b: { arity: 1 } }
+        const argv = "-ab val".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["val"],
+            a: ["b"]
+        })
+    })
 })

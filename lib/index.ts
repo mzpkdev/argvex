@@ -63,12 +63,13 @@ const longflag = (
 
 const shortflag = (
     alias: string,
-    aliases: string,
+    index: number,
+    groupLength: number,
     definition?: Definition
 ): { definition: Definition; values: string[]; arity: number } => {
     const values: string[] = []
     const defArity = definition?.arity ?? Infinity
-    const arity = aliases.indexOf(alias) !== aliases.length - 1 ? 0 : defArity
+    const arity = index !== groupLength - 1 ? 0 : defArity
     return {
         definition: definition ?? { name: alias, arity: defArity },
         values,
@@ -105,10 +106,19 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
     const known = Object.keys(schema)
     const definitions = new Map<string, Definition>()
     for (const [name, def] of Object.entries(schema)) {
-        if (def.alias != null && def.alias.length !== 1) {
+        if (name === "_") {
             throw new ParseError("INVALID_SCHEMA", name, known)
         }
-        if (def.arity != null && def.arity < 0) {
+        if (
+            def.alias != null &&
+            (def.alias.length !== 1 || def.alias === "_" || def.alias === "-")
+        ) {
+            throw new ParseError("INVALID_SCHEMA", name, known)
+        }
+        if (
+            def.arity != null &&
+            (!Number.isInteger(def.arity) || def.arity < 0)
+        ) {
             throw new ParseError("INVALID_SCHEMA", name, known)
         }
         if (
@@ -130,9 +140,9 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
     type Current = { arity: number; consumed: number; target: string[] } | null
     let current = null as Current
     const _: string[] = []
-    const flags: Record<string, string[]> = {}
+    const flags: Record<string, string[]> = Object.create(null)
     const setFlag = (name: string, values: string[], arity: number) => {
-        if (!override && flags[name] != null) {
+        if (!override && Object.hasOwn(flags, name)) {
             flags[name].push(...values)
         } else {
             flags[name] = values
@@ -206,7 +216,8 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     }
                     const { definition, values, arity } = shortflag(
                         alias,
-                        flagChars,
+                        j,
+                        flagChars.length,
                         definitions.get(alias)
                     )
                     definitions.set(alias, definition)
@@ -238,7 +249,8 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 }
                 const { definition, values, arity } = shortflag(
                     alias,
-                    aliases,
+                    j,
+                    aliases.length,
                     definitions.get(alias)
                 )
                 definitions.set(alias, definition)
