@@ -61,6 +61,7 @@ export type ArgvexOptions<
     strict?: TStrict
     override?: boolean
     stopEarly?: boolean
+    permissive?: boolean
 }
 
 type Definition = {
@@ -127,7 +128,8 @@ const argvex = <
         schema = {},
         strict = false,
         override = false,
-        stopEarly = false
+        stopEarly = false,
+        permissive = false
     } = options
     const known = Object.keys(schema)
     const definitions = new Map<string, Definition>()
@@ -308,6 +310,11 @@ const argvex = <
                 )
             }
             if (strict && !definitions.has(name)) {
+                if (permissive) {
+                    _.push(arg)
+                    current = null
+                    continue
+                }
                 throw new ParseError("UNKNOWN_FLAG", name, known)
             }
             const { definition, values, arity } = longflag(
@@ -343,6 +350,10 @@ const argvex = <
                 for (let j = 0; j < flagChars.length - 1; j++) {
                     const alias = flagChars[j]
                     if (strict && !definitions.has(alias)) {
+                        if (permissive) {
+                            _.push(`-${alias}`)
+                            continue
+                        }
                         throw new ParseError("UNKNOWN_FLAG", alias, known)
                     }
                     const { definition, values, arity } = shortflag(
@@ -355,6 +366,10 @@ const argvex = <
                 }
                 const alias = flagChars[flagChars.length - 1]
                 if (strict && !definitions.has(alias)) {
+                    if (permissive) {
+                        _.push(arg)
+                        continue
+                    }
                     throw new ParseError("UNKNOWN_FLAG", alias, known)
                 }
                 const definition = definitions.get(alias) ?? {
@@ -367,6 +382,10 @@ const argvex = <
             for (let j = 0; j < aliases.length; j++) {
                 const alias = aliases[j]
                 if (strict && !definitions.has(alias)) {
+                    if (permissive) {
+                        _.push(`-${alias}`)
+                        continue
+                    }
                     throw new ParseError("UNKNOWN_FLAG", alias, known)
                 }
                 const inliner = inlineflag(j, aliases, definitions.get(alias))

@@ -39,6 +39,7 @@ Table of Contents
   * [POSIX-flavoured](#posix-flavoured)
   * [Repeating flags](#repeating-flags)
   * [Strict Mode](#strict-mode)
+  * [Permissive Mode](#permissive-mode)
 * [Examples of common patterns](#examples-of-common-patterns)
   * [Case with required flags](#case-with-required-flags)
   * [Case with default values](#case-with-default-values)
@@ -287,6 +288,24 @@ const schema = {
 const args = argvex({ schema, strict: true })
 // args -> ParseError
 ```
+
+### Permissive Mode
+
+When you want strict typing but need to forward unknown flags (e.g. to a child process), use `permissive` with `strict`. Unknown flags are collected in `_` instead of throwing.
+
+```typescript
+import argvex from "argvex"
+
+const schema = {
+  verbose: { arity: 0 },
+  output: { arity: 1 },
+}
+const args = argvex({ schema, strict: true, permissive: true })
+// argv: --verbose --output file.txt --format json -x
+// args -> { verbose: [], output: ["file.txt"], _: ["--format", "json", "-x"] }
+```
+
+Unknown flags preserve their raw form in `_` — including dashes and inline `=` values. Without `strict`, `permissive` has no effect.
 
 ### Examples of common patterns
 

@@ -1444,3 +1444,127 @@ describe("argvex type inference", () => {
         expect(val).toStrictEqual(["val"])
     })
 })
+
+describe("argvex permissive mode", () => {
+    it("should push unknown long flag to positionals", () => {
+        const result = argvex({
+            argv: ["--known", "--unknown"],
+            schema: { known: { arity: 0 } },
+            strict: true,
+            permissive: true
+        })
+        expect(result._).toStrictEqual(["--unknown"])
+        expect(result.known).toStrictEqual([])
+    })
+
+    it("should push unknown long flag with = value to positionals verbatim", () => {
+        const result = argvex({
+            argv: ["--unknown=foo"],
+            schema: {},
+            strict: true,
+            permissive: true
+        })
+        expect(result._).toStrictEqual(["--unknown=foo"])
+    })
+
+    it("should push unknown short flag to positionals", () => {
+        const result = argvex({
+            argv: ["-x"],
+            schema: {},
+            strict: true,
+            permissive: true
+        })
+        expect(result._).toStrictEqual(["-x"])
+    })
+
+    it("should push unknown short flag with = value to positionals verbatim", () => {
+        const result = argvex({
+            argv: ["-x=val"],
+            schema: {},
+            strict: true,
+            permissive: true
+        })
+        expect(result._).toStrictEqual(["-x=val"])
+    })
+
+    it("should parse known flags normally alongside unknown flags", () => {
+        const result = argvex({
+            argv: "--name val --unknown --also-unknown=foo".split(" "),
+            schema: { name: { arity: 1 } },
+            strict: true,
+            permissive: true
+        })
+        expect(result.name).toStrictEqual(["val"])
+        expect(result._).toStrictEqual(["--unknown", "--also-unknown=foo"])
+    })
+
+    it("should collect multiple unknown flags in positionals", () => {
+        const result = argvex({
+            argv: ["--a", "--b", "--c"],
+            schema: {},
+            strict: true,
+            permissive: true
+        })
+        expect(result._).toStrictEqual(["--a", "--b", "--c"])
+    })
+
+    it("should mix positionals and unknown flags in _", () => {
+        const result = argvex({
+            argv: ["pos1", "--unknown", "pos2"],
+            schema: {},
+            strict: true,
+            permissive: true
+        })
+        expect(result._).toStrictEqual(["pos1", "--unknown", "pos2"])
+    })
+
+    it("should handle grouped short flags with mixed known and unknown", () => {
+        const result = argvex({
+            argv: ["-dxe"],
+            schema: { d: { arity: 0 }, e: { arity: 0 } },
+            strict: true,
+            permissive: true
+        })
+        expect(result.d).toStrictEqual([])
+        expect(result.e).toStrictEqual([])
+        expect(result._).toStrictEqual(["-x"])
+    })
+
+    it("should be a no-op without strict mode", () => {
+        const result = argvex({
+            argv: ["--unknown"],
+            schema: {},
+            strict: false,
+            permissive: true
+        })
+        expect(result._).toStrictEqual([])
+        expect(result.unknown).toStrictEqual([])
+    })
+
+    it("should work with stopEarly", () => {
+        const result = argvex({
+            argv: "--unknown pos1 --known pos2".split(" "),
+            schema: { known: { arity: 0 } },
+            strict: true,
+            permissive: true,
+            stopEarly: true
+        })
+        expect(result._).toStrictEqual(["--unknown", "pos1", "--known", "pos2"])
+    })
+
+    it("should have tight types in strict + permissive mode", () => {
+        const schema = { verbose: { arity: 0 }, size: { arity: 1 } } as const
+        const result = argvex({
+            argv: "--verbose --unknown".split(" "),
+            schema,
+            strict: true,
+            permissive: true
+        })
+        const v: string[] | undefined = result.verbose
+        const s: string[] | undefined = result.size
+        expect(v).toStrictEqual([])
+        expect(s).toBeUndefined()
+        // @ts-expect-error -- unknown keys should still be a type error
+        result.anything
+    })
+})
