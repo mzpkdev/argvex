@@ -1059,6 +1059,20 @@ describe("argvex test coverage gaps", () => {
         })
     })
 
+    it("should default to process.argv.slice(2) when no argv option is provided", () => {
+        const original = process.argv
+        process.argv = ["node", "script.js", "--verbose", "hello"]
+        try {
+            const result = argvex()
+            expect(result).toStrictEqual({
+                _: [],
+                verbose: ["hello"]
+            })
+        } finally {
+            process.argv = original
+        }
+    })
+
     it("should handle grouped flags where all chars have arity > 0", () => {
         const schema = { a: { arity: 1 }, b: { arity: 1 } }
         const argv = "-ab val".split(" ")
