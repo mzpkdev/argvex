@@ -25,6 +25,7 @@ export class ParseError extends Error {
             INVALID_SCHEMA: `Schema definition for "${argument}" is invalid${suffix}.`
         }
         super(messages[code])
+        this.name = "ParseError"
         this.code = code
         this.argument = argument
         this.known = known
@@ -120,7 +121,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             throw new ParseError(
                 "INVALID_SCHEMA",
                 name,
-                known,
+                [],
                 'key cannot be "_"'
             )
         }
@@ -128,7 +129,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             throw new ParseError(
                 "INVALID_SCHEMA",
                 name,
-                known,
+                [],
                 "alias must be a single character"
             )
         }
@@ -136,7 +137,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             throw new ParseError(
                 "INVALID_SCHEMA",
                 name,
-                known,
+                [],
                 'alias cannot be "_"'
             )
         }
@@ -144,15 +145,47 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             throw new ParseError(
                 "INVALID_SCHEMA",
                 name,
-                known,
+                [],
                 'alias cannot be "-"'
+            )
+        }
+        if (def.alias === "=") {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                [],
+                "alias cannot be '='"
+            )
+        }
+        if (name === "") {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                [],
+                "key cannot be empty"
+            )
+        }
+        if (name.includes("=")) {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                [],
+                "key cannot contain '='"
+            )
+        }
+        if (name.startsWith("-")) {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                [],
+                "key cannot start with '-'"
             )
         }
         if (def.arity != null && def.arity < 0) {
             throw new ParseError(
                 "INVALID_SCHEMA",
                 name,
-                known,
+                [],
                 "arity cannot be negative"
             )
         }
@@ -160,7 +193,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             throw new ParseError(
                 "INVALID_SCHEMA",
                 name,
-                known,
+                [],
                 "arity must be a non-negative integer"
             )
         }
@@ -168,7 +201,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             throw new ParseError(
                 "INVALID_SCHEMA",
                 name,
-                known,
+                [],
                 "name collides with an existing flag or alias"
             )
         }
@@ -176,7 +209,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             throw new ParseError(
                 "INVALID_SCHEMA",
                 name,
-                known,
+                [],
                 "alias collides with an existing flag or alias"
             )
         }
@@ -239,7 +272,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 throw new ParseError(
                     "INVALID_FORMAT",
                     arg,
-                    known,
+                    [],
                     "flag name is missing"
                 )
             }
@@ -247,7 +280,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 throw new ParseError(
                     "INVALID_FORMAT",
                     arg,
-                    known,
+                    [],
                     "triple dash is not valid"
                 )
             }
@@ -255,7 +288,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 throw new ParseError(
                     "INVALID_FORMAT",
                     arg,
-                    known,
+                    [],
                     'flag name cannot be "_"'
                 )
             }
@@ -267,7 +300,6 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 value,
                 definitions.get(name)
             )
-            definitions.set(name, definition)
             setFlag(definition.name, values, arity)
             continue
         }
@@ -277,7 +309,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 throw new ParseError(
                     "INVALID_FORMAT",
                     arg,
-                    known,
+                    [],
                     "flag name is missing"
                 )
             }
@@ -287,7 +319,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     throw new ParseError(
                         "INVALID_FORMAT",
                         arg,
-                        known,
+                        [],
                         "flag name is missing"
                     )
                 }
@@ -304,7 +336,6 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                         flagChars.length,
                         definitions.get(alias)
                     )
-                    definitions.set(alias, definition)
                     setFlag(definition.name, values, arity)
                 }
                 const alias = flagChars[flagChars.length - 1]
@@ -315,7 +346,6 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     name: alias,
                     arity: Infinity
                 }
-                definitions.set(alias, definition)
                 setFlag(definition.name, [value], definition.arity)
                 continue
             }
@@ -327,7 +357,6 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 const inliner = inlineflag(j, aliases, definitions.get(alias))
                 if (inliner != null) {
                     const { definition, values } = inliner
-                    definitions.set(alias, definition)
                     setFlag(definition.name, values, definition.arity)
                     break
                 }
@@ -337,7 +366,6 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     aliases.length,
                     definitions.get(alias)
                 )
-                definitions.set(alias, definition)
                 setFlag(definition.name, values, arity)
             }
             continue

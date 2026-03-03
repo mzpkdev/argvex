@@ -1082,3 +1082,156 @@ describe("argvex test coverage gaps", () => {
         })
     })
 })
+
+describe("ParseError", () => {
+    it("should have name 'ParseError'", () => {
+        try {
+            argvex({ argv: ["--_"] })
+        } catch (error) {
+            expect(error).toBeInstanceOf(ParseError)
+            expect((error as ParseError).name).toBe("ParseError")
+        }
+    })
+
+    it("should produce toString() starting with 'ParseError:'", () => {
+        try {
+            argvex({ argv: ["--_"] })
+        } catch (error) {
+            expect(error).toBeInstanceOf(ParseError)
+            expect((error as Error).toString()).toMatch(/^ParseError:/)
+        }
+    })
+
+    it("should have empty known array for INVALID_FORMAT errors", () => {
+        try {
+            argvex({ argv: ["---flag"] })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_FORMAT" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).known).toStrictEqual([])
+        }
+    })
+
+    it("should have empty known array for INVALID_FORMAT even with schema", () => {
+        const schema = { verbose: { alias: "v", arity: 0 } }
+        try {
+            argvex({ argv: ["---flag"], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_FORMAT" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).known).toStrictEqual([])
+        }
+    })
+
+    it("should have empty known array for INVALID_SCHEMA errors", () => {
+        const schema = { verbose: { alias: "verb" } }
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).known).toStrictEqual([])
+        }
+    })
+
+    it("should still populate known array for UNKNOWN_FLAG errors", () => {
+        const schema = { verbose: { alias: "v", arity: 0 } }
+        try {
+            argvex({ argv: ["--unknown"], schema, strict: true })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "UNKNOWN_FLAG" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).known).toStrictEqual(["verbose"])
+        }
+    })
+})
+
+describe("argvex schema validation gaps", () => {
+    it("should throw INVALID_SCHEMA for empty string key", () => {
+        const schema = { "": { arity: 1 } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for key containing '='", () => {
+        const schema = { "foo=bar": { arity: 1 } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("foo=bar")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for key starting with '-'", () => {
+        const schema = { "-flag": {} }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("-flag")
+        }
+    })
+
+    it("should throw INVALID_SCHEMA for alias '='", () => {
+        const schema = { verbose: { alias: "=" } }
+        expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+        try {
+            argvex({ argv: [], schema })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("verbose")
+        }
+    })
+})
+
+describe("argvex definitions map pollution", () => {
+    it("should produce order-independent results with partial schema and unknown flags", () => {
+        const schema = { known: { arity: 2 } }
+
+        expect(
+            argvex({ argv: "--known a b --unknown".split(" "), schema })
+        ).toStrictEqual({
+            _: [],
+            known: ["a", "b"],
+            unknown: []
+        })
+
+        expect(
+            argvex({ argv: "--unknown --known a b".split(" "), schema })
+        ).toStrictEqual({
+            _: [],
+            unknown: [],
+            known: ["a", "b"]
+        })
+    })
+
+    it("should not let a previously-seen unknown flag interrupt finite-arity consumption", () => {
+        const schema = { known: { arity: 2 } }
+        const result = argvex({
+            argv: "--unknown x --known a --unknown b".split(" "),
+            schema
+        })
+        expect(result.known).toStrictEqual(["a", "--unknown"])
+        expect(result._).toStrictEqual(["b"])
+    })
+})
