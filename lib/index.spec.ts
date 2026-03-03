@@ -1326,3 +1326,121 @@ describe("argvex definitions map pollution", () => {
         expect(result._).toStrictEqual(["b"])
     })
 })
+
+describe("argvex stopEarly", () => {
+    it("should collect everything as positional when first arg is positional", () => {
+        const argv = "cmd --flag value".split(" ")
+        expect(argvex({ argv, stopEarly: true })).toStrictEqual({
+            _: ["cmd", "--flag", "value"]
+        })
+    })
+
+    it("should parse flags that appear before the first positional", () => {
+        const schema = { verbose: { arity: 0 }, size: { arity: 1 } }
+        const argv = "--verbose --size xl cmd --other".split(" ")
+        expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
+            _: ["cmd", "--other"],
+            verbose: [],
+            size: ["xl"]
+        })
+    })
+
+    it("should still respect -- delimiter with stopEarly", () => {
+        const schema = { flag: { arity: 0 } }
+        const argv = "--flag -- cmd --other".split(" ")
+        expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
+            _: ["cmd", "--other"],
+            flag: []
+        })
+    })
+
+    it("should not trigger on args consumed by arity", () => {
+        const schema = { milk: { arity: 3 } }
+        const argv = "--milk oat almond cow cmd --other".split(" ")
+        expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
+            _: ["cmd", "--other"],
+            milk: ["oat", "almond", "cow"]
+        })
+    })
+
+    it("should parse short flags before the first positional", () => {
+        const schema = {
+            verbose: { alias: "v", arity: 0 },
+            size: { alias: "s", arity: 1 }
+        }
+        const argv = "-vs xl cmd --other".split(" ")
+        expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
+            _: ["cmd", "--other"],
+            verbose: [],
+            size: ["xl"]
+        })
+    })
+
+    it("should not stop early when stopEarly is not set", () => {
+        const schema = { verbose: { arity: 0 } }
+        const argv = "cmd --verbose other".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["cmd", "other"],
+            verbose: []
+        })
+    })
+
+    it("should not trigger on args consumed by schema-less infinite arity", () => {
+        const argv = "--flag value cmd".split(" ")
+        expect(argvex({ argv, stopEarly: true })).toStrictEqual({
+            _: [],
+            flag: ["value", "cmd"]
+        })
+    })
+
+    it("should return empty result with empty argv", () => {
+        expect(argvex({ argv: [], stopEarly: true })).toStrictEqual({
+            _: []
+        })
+    })
+
+    it("should work with strict mode", () => {
+        const schema = { output: { alias: "o", arity: 1 } }
+        const argv = "-o file.txt cmd --unknown".split(" ")
+        expect(
+            argvex({ argv, schema, strict: true, stopEarly: true })
+        ).toStrictEqual({
+            _: ["cmd", "--unknown"],
+            output: ["file.txt"]
+        })
+    })
+})
+
+describe("argvex type inference", () => {
+    it("should allow accessing unknown flags in non-strict mode with schema", () => {
+        const schema = { verbose: { arity: 0 }, size: { arity: 1 } } as const
+        const result = argvex({
+            argv: "--verbose --unknown val".split(" "),
+            schema
+        })
+        expect(result.verbose).toStrictEqual([])
+        const unknownVal: string[] | undefined = result.unknown
+        expect(unknownVal).toStrictEqual(["val"])
+    })
+
+    it("should have typed keys in strict mode with schema", () => {
+        const schema = { verbose: { arity: 0 }, size: { arity: 1 } } as const
+        const result = argvex({
+            argv: "--verbose --size xl".split(" "),
+            schema,
+            strict: true
+        })
+        const v: string[] | undefined = result.verbose
+        const s: string[] | undefined = result.size
+        expect(v).toStrictEqual([])
+        expect(s).toStrictEqual(["xl"])
+        // @ts-expect-error -- unknown keys should be a type error in strict mode
+        result.anything
+    })
+
+    it("should have index signature without schema", () => {
+        const result = argvex({ argv: "--anything val".split(" ") })
+        const val: string[] | undefined = result.anything
+        expect(val).toStrictEqual(["val"])
+    })
+})

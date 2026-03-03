@@ -38,20 +38,29 @@ export type Flag = { alias?: string; arity?: number }
 
 export type ArgvexSchema = Record<string, Flag>
 
-export type InferArgvex<TSchema extends ArgvexSchema | undefined> =
+export type InferArgvex<
+    TSchema extends ArgvexSchema | undefined,
+    TStrict extends boolean = false
+> =
     TSchema extends Record<infer K extends string, Flag>
         ? string extends K
             ? { _: string[] } & { [flag: string]: string[] | undefined }
-            : { _: string[] } & Partial<{ [P in K]: string[] }>
+            : TStrict extends true
+              ? { _: string[] } & Partial<{ [P in K]: string[] }>
+              : { _: string[] } & Partial<{ [P in K]: string[] }> & {
+                        [flag: string]: string[] | undefined
+                    }
         : { _: string[] } & { [flag: string]: string[] | undefined }
 
 export type ArgvexOptions<
-    TSchema extends ArgvexSchema | undefined = ArgvexSchema | undefined
+    TSchema extends ArgvexSchema | undefined = ArgvexSchema | undefined,
+    TStrict extends boolean = boolean
 > = {
     argv?: string[]
     schema?: TSchema
-    strict?: boolean
+    strict?: TStrict
     override?: boolean
+    stopEarly?: boolean
 }
 
 type Definition = {
@@ -107,14 +116,18 @@ const inlineflag = (
     return { definition, values: [aliases.substring(index + 1)] }
 }
 
-const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
-    options: ArgvexOptions<TSchema> = {}
-): InferArgvex<TSchema> => {
+const argvex = <
+    TSchema extends ArgvexSchema | undefined = undefined,
+    TStrict extends boolean = false
+>(
+    options: ArgvexOptions<TSchema, TStrict> = {}
+): InferArgvex<TSchema, TStrict> => {
     const {
         argv = process.argv.slice(2),
         schema = {},
         strict = false,
-        override = false
+        override = false,
+        stopEarly = false
     } = options
     const known = Object.keys(schema)
     const definitions = new Map<string, Definition>()
@@ -373,13 +386,17 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             continue
         }
         if (current == null || current.consumed >= current.arity) {
+            if (stopEarly) {
+                _.push(...argv.slice(i))
+                break
+            }
             _.push(arg)
             continue
         }
         current.target.push(arg)
         current.consumed++
     }
-    return { ...flags, _ } as InferArgvex<TSchema>
+    return { ...flags, _ } as InferArgvex<TSchema, TStrict>
 }
 
 export default argvex
