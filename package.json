@@ -5,9 +5,6 @@
   "engines": { "node": ">=18" },
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
-  "bin": {
-    "argvex": "bin/run"
-  },
   "scripts": {
     "build": "tsc --build",
     "clean": "tsc --build --clean",
@@ -35,7 +32,6 @@
     "url": "git+https://github.com/mzpkdev/argvex.git"
   },
   "files": [
-    "bin/",
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/**/*.d.ts.map",

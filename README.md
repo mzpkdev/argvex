@@ -22,8 +22,6 @@
     <a href="https://github.com/mzpkdev/argvex/issues">Report a bug</a>
     &nbsp;&nbsp;·&nbsp;&nbsp;
     <a href="https://github.com/mzpkdev/argvex/issues">Request a feature</a>
-    &nbsp;&nbsp;·&nbsp;&nbsp;
-    <a href="./README_ZH.md">中文</a>
   </p>
 <br />
 <br />
@@ -328,7 +326,7 @@ import argvex from "argvex"
 
 const args = argvex()
 
-const shots = args.shots.map(Number)
+const shots = args.shots?.map(Number) ?? []
 ```
 
 #### Case with error handling
