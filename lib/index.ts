@@ -8,11 +8,21 @@ export class ParseError extends Error {
     argument: string
     known: string[]
 
-    constructor(code: ParseErrorCode, argument: string, known: string[]) {
+    constructor(
+        code: ParseErrorCode,
+        argument: string,
+        known: string[],
+        reason?: string
+    ) {
+        const suffix = reason ? `: ${reason}` : ""
+        const knownList =
+            known.length > 0
+                ? ` Known flags: ${known.map((k) => `--${k}`).join(", ")}.`
+                : ""
         const messages: Record<ParseErrorCode, string> = {
-            UNKNOWN_FLAG: `Flag "${argument}" is not recognized.`,
-            INVALID_FORMAT: `Argument "${argument}" is malformed.`,
-            INVALID_SCHEMA: `Schema definition for "${argument}" is invalid.`
+            UNKNOWN_FLAG: `Flag "${argument}" is not recognized.${knownList}`,
+            INVALID_FORMAT: `Argument "${argument}" is malformed${suffix}.`,
+            INVALID_SCHEMA: `Schema definition for "${argument}" is invalid${suffix}.`
         }
         super(messages[code])
         this.code = code
@@ -25,12 +35,12 @@ export type Flag = { alias?: string; arity?: number }
 
 export type ArgvexSchema = Record<string, Flag>
 
-type InferArgvex<TSchema extends ArgvexSchema | undefined> =
+export type InferArgvex<TSchema extends ArgvexSchema | undefined> =
     TSchema extends Record<infer K extends string, Flag>
         ? string extends K
-            ? { _: string[]; [flag: string]: string[] }
+            ? { _: string[] } & { [flag: string]: string[] | undefined }
             : { _: string[] } & Partial<{ [P in K]: string[] }>
-        : { _: string[]; [flag: string]: string[] }
+        : { _: string[] } & { [flag: string]: string[] | undefined }
 
 export type ArgvexOptions<
     TSchema extends ArgvexSchema | undefined = ArgvexSchema | undefined
@@ -107,25 +117,68 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
     const definitions = new Map<string, Definition>()
     for (const [name, def] of Object.entries(schema)) {
         if (name === "_") {
-            throw new ParseError("INVALID_SCHEMA", name, known)
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                known,
+                'key cannot be "_"'
+            )
         }
-        if (
-            def.alias != null &&
-            (def.alias.length !== 1 || def.alias === "_" || def.alias === "-")
-        ) {
-            throw new ParseError("INVALID_SCHEMA", name, known)
+        if (def.alias != null && def.alias.length !== 1) {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                known,
+                "alias must be a single character"
+            )
         }
-        if (
-            def.arity != null &&
-            (!Number.isInteger(def.arity) || def.arity < 0)
-        ) {
-            throw new ParseError("INVALID_SCHEMA", name, known)
+        if (def.alias === "_") {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                known,
+                'alias cannot be "_"'
+            )
         }
-        if (
-            definitions.has(name) ||
-            (def.alias != null && definitions.has(def.alias))
-        ) {
-            throw new ParseError("INVALID_SCHEMA", name, known)
+        if (def.alias === "-") {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                known,
+                'alias cannot be "-"'
+            )
+        }
+        if (def.arity != null && def.arity < 0) {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                known,
+                "arity cannot be negative"
+            )
+        }
+        if (def.arity != null && !Number.isInteger(def.arity)) {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                known,
+                "arity must be a non-negative integer"
+            )
+        }
+        if (definitions.has(name)) {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                known,
+                "name collides with an existing flag or alias"
+            )
+        }
+        if (def.alias != null && definitions.has(def.alias)) {
+            throw new ParseError(
+                "INVALID_SCHEMA",
+                name,
+                known,
+                "alias collides with an existing flag or alias"
+            )
         }
         const definition = {
             name,
@@ -182,8 +235,29 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             const eq = arg.indexOf("=", 2)
             const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
             const value = eq === -1 ? undefined : arg.substring(eq + 1)
-            if (name.length === 0 || name.startsWith("-") || name === "_") {
-                throw new ParseError("INVALID_FORMAT", arg, known)
+            if (name.length === 0) {
+                throw new ParseError(
+                    "INVALID_FORMAT",
+                    arg,
+                    known,
+                    "flag name is missing"
+                )
+            }
+            if (name.startsWith("-")) {
+                throw new ParseError(
+                    "INVALID_FORMAT",
+                    arg,
+                    known,
+                    "triple dash is not valid"
+                )
+            }
+            if (name === "_") {
+                throw new ParseError(
+                    "INVALID_FORMAT",
+                    arg,
+                    known,
+                    'flag name cannot be "_"'
+                )
             }
             if (strict && !definitions.has(name)) {
                 throw new ParseError("UNKNOWN_FLAG", arg, known)
@@ -200,12 +274,22 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
         if (arg.startsWith("-")) {
             const aliases = arg.substring(1)
             if (aliases.length === 0) {
-                throw new ParseError("INVALID_FORMAT", arg, known)
+                throw new ParseError(
+                    "INVALID_FORMAT",
+                    arg,
+                    known,
+                    "flag name is missing"
+                )
             }
             const eq = aliases.indexOf("=")
             if (eq !== -1) {
                 if (eq === 0) {
-                    throw new ParseError("INVALID_FORMAT", arg, known)
+                    throw new ParseError(
+                        "INVALID_FORMAT",
+                        arg,
+                        known,
+                        "flag name is missing"
+                    )
                 }
                 const flagChars = aliases.substring(0, eq)
                 const value = aliases.substring(eq + 1)

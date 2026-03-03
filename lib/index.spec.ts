@@ -138,7 +138,7 @@ describe("argvex with schema", () => {
             ParseError
         )
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
-            `Flag "--tea" is not recognized.`
+            `Flag "--tea" is not recognized. Known flags: --version, --decaf, --size, --shots, --milk, --name.`
         )
         try {
             argvex({ argv, schema, strict: true })
@@ -167,7 +167,7 @@ describe("argvex with schema", () => {
             ParseError
         )
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
-            `Flag "-u" is not recognized.`
+            `Flag "-u" is not recognized. Known flags: --version, --decaf, --size, --shots, --milk, --name.`
         )
         try {
             argvex({ argv, schema, strict: true })
@@ -233,7 +233,7 @@ describe("argvex edge cases", () => {
         const argv = "brewer --=2xl".split(" ")
         expect(() => argvex({ argv })).toThrowError(ParseError)
         expect(() => argvex({ argv })).toThrowError(
-            `Argument "--=2xl" is malformed.`
+            `Argument "--=2xl" is malformed: flag name is missing.`
         )
         try {
             argvex({ argv })
@@ -248,7 +248,7 @@ describe("argvex edge cases", () => {
         const argv = "brewer -".split(" ")
         expect(() => argvex({ argv })).toThrowError(ParseError)
         expect(() => argvex({ argv })).toThrowError(
-            `Argument "-" is malformed.`
+            `Argument "-" is malformed: flag name is missing.`
         )
         try {
             argvex({ argv })
@@ -288,7 +288,7 @@ describe("argvex edge cases", () => {
         const argv = "brewer -=xl".split(" ")
         expect(() => argvex({ argv })).toThrowError(ParseError)
         expect(() => argvex({ argv })).toThrowError(
-            `Argument "-=xl" is malformed.`
+            `Argument "-=xl" is malformed: flag name is missing.`
         )
         try {
             argvex({ argv })
@@ -426,8 +426,24 @@ describe("argvex edge cases", () => {
         const argv = "--_ value pos1".split(" ")
         expect(() => argvex({ argv })).toThrowError(ParseError)
         expect(() => argvex({ argv })).toThrowError(
-            `Argument "--_" is malformed.`
+            `Argument "--_" is malformed: flag name cannot be "_".`
         )
+    })
+
+    it("should reject triple dash as invalid format", () => {
+        const argv = ["---flag"]
+        expect(() => argvex({ argv })).toThrowError(ParseError)
+        expect(() => argvex({ argv })).toThrowError(
+            `Argument "---flag" is malformed: triple dash is not valid.`
+        )
+        try {
+            argvex({ argv })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "INVALID_FORMAT" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("---flag")
+        }
     })
 
     it("should parse single-char long flag as a regular flag", () => {
@@ -772,7 +788,7 @@ describe("argvex strict mode with arity", () => {
             ParseError
         )
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
-            `Flag "--unknown" is not recognized.`
+            `Flag "--unknown" is not recognized. Known flags: --output.`
         )
     })
 
@@ -811,7 +827,7 @@ describe("argvex strict mode with arity", () => {
             ParseError
         )
         expect(() => argvex({ argv, schema, strict: true })).toThrowError(
-            `Flag "-x" is not recognized.`
+            `Flag "-x" is not recognized. Known flags: --output.`
         )
     })
 })
@@ -821,7 +837,7 @@ describe("argvex schema validation", () => {
         const schema = { verbose: { alias: "verb" } }
         expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
         expect(() => argvex({ argv: [], schema })).toThrowError(
-            `Schema definition for "verbose" is invalid.`
+            `Schema definition for "verbose" is invalid: alias must be a single character.`
         )
         try {
             argvex({ argv: [], schema })
@@ -837,7 +853,7 @@ describe("argvex schema validation", () => {
         const schema = { verbose: { alias: "" } }
         expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
         expect(() => argvex({ argv: [], schema })).toThrowError(
-            `Schema definition for "verbose" is invalid.`
+            `Schema definition for "verbose" is invalid: alias must be a single character.`
         )
         try {
             argvex({ argv: [], schema })
@@ -853,7 +869,7 @@ describe("argvex schema validation", () => {
         const schema = { verbose: { arity: -1 } }
         expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
         expect(() => argvex({ argv: [], schema })).toThrowError(
-            `Schema definition for "verbose" is invalid.`
+            `Schema definition for "verbose" is invalid: arity cannot be negative.`
         )
         try {
             argvex({ argv: [], schema })
@@ -869,7 +885,7 @@ describe("argvex schema validation", () => {
         const schema = { verbose: { alias: "v" }, version: { alias: "v" } }
         expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
         expect(() => argvex({ argv: [], schema })).toThrowError(
-            `Schema definition for "version" is invalid.`
+            `Schema definition for "version" is invalid: alias collides with an existing flag or alias.`
         )
         try {
             argvex({ argv: [], schema })
