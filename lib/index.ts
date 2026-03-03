@@ -2,6 +2,7 @@ export type ParseErrorCode =
     | "UNKNOWN_FLAG"
     | "INVALID_FORMAT"
     | "INVALID_SCHEMA"
+    | "RESERVED_NAME"
 
 export class ParseError extends Error {
     code: ParseErrorCode
@@ -22,7 +23,8 @@ export class ParseError extends Error {
         const messages: Record<ParseErrorCode, string> = {
             UNKNOWN_FLAG: `Flag "${argument.length === 1 ? "-" : "--"}${argument}" is not recognized.${knownList}`,
             INVALID_FORMAT: `Argument "${argument}" is malformed${suffix}.`,
-            INVALID_SCHEMA: `Schema definition for "${argument}" is invalid${suffix}.`
+            INVALID_SCHEMA: `Schema definition for "${argument}" is invalid${suffix}.`,
+            RESERVED_NAME: `Flag name "${argument}" is reserved${suffix}.`
         }
         super(messages[code])
         this.name = "ParseError"
@@ -286,10 +288,10 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             }
             if (name === "_") {
                 throw new ParseError(
-                    "INVALID_FORMAT",
+                    "RESERVED_NAME",
                     arg,
                     [],
-                    'flag name cannot be "_"'
+                    '"_" is used for positional arguments'
                 )
             }
             if (strict && !definitions.has(name)) {

@@ -426,8 +426,17 @@ describe("argvex edge cases", () => {
         const argv = "--_ value pos1".split(" ")
         expect(() => argvex({ argv })).toThrowError(ParseError)
         expect(() => argvex({ argv })).toThrowError(
-            `Argument "--_" is malformed: flag name cannot be "_".`
+            `Flag name "--_" is reserved: "_" is used for positional arguments.`
         )
+        try {
+            argvex({ argv })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "RESERVED_NAME" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).argument).toBe("--_")
+            expect((error as ParseError).known).toStrictEqual([])
+        }
     })
 
     it("should reject triple dash as invalid format", () => {
@@ -1070,6 +1079,24 @@ describe("argvex test coverage gaps", () => {
         })
     })
 
+    it("should replace all consumed values when override is enabled with schema-less multi-value flags", () => {
+        const argv = "--flag a b c --flag x y".split(" ")
+        expect(argvex({ argv, override: true })).toStrictEqual({
+            _: [],
+            flag: ["x", "y"]
+        })
+    })
+
+    it("should replace accumulated values on repeated schema-less flags with override", () => {
+        const argv =
+            "--items one two three --other stuff --items four five".split(" ")
+        expect(argvex({ argv, override: true })).toStrictEqual({
+            _: [],
+            items: ["four", "five"],
+            other: ["stuff"]
+        })
+    })
+
     it("should throw UNKNOWN_FLAG with strict and empty schema", () => {
         const argv = ["--anything"]
         expect(() => argvex({ argv, schema: {}, strict: true })).toThrowError(
@@ -1107,6 +1134,31 @@ describe("argvex test coverage gaps", () => {
         expect(argvex({ argv, schema })).toStrictEqual({
             _: ["val"],
             a: ["b"]
+        })
+    })
+
+    it("should parse unicode flag names in schema-less mode", () => {
+        const argv = ["--caf\u00e9", "latte"]
+        expect(argvex({ argv })).toStrictEqual({
+            _: [],
+            "caf\u00e9": ["latte"]
+        })
+    })
+
+    it("should parse unicode flag names with schema", () => {
+        const schema = { "caf\u00e9": { arity: 1 } }
+        const argv = ["--caf\u00e9", "latte"]
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            "caf\u00e9": ["latte"]
+        })
+    })
+
+    it("should parse unicode flag names with = syntax", () => {
+        const argv = ["--caf\u00e9=latte"]
+        expect(argvex({ argv })).toStrictEqual({
+            _: [],
+            "caf\u00e9": ["latte"]
         })
     })
 })
@@ -1160,6 +1212,17 @@ describe("ParseError", () => {
         } catch (error) {
             expect((error as ParseError).code).toBe(
                 "INVALID_SCHEMA" satisfies ParseErrorCode
+            )
+            expect((error as ParseError).known).toStrictEqual([])
+        }
+    })
+
+    it("should have empty known array for RESERVED_NAME errors", () => {
+        try {
+            argvex({ argv: ["--_"] })
+        } catch (error) {
+            expect((error as ParseError).code).toBe(
+                "RESERVED_NAME" satisfies ParseErrorCode
             )
             expect((error as ParseError).known).toStrictEqual([])
         }
