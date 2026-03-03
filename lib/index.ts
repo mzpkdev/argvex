@@ -20,7 +20,7 @@ export class ParseError extends Error {
                 ? ` Known flags: ${known.map((k) => `--${k}`).join(", ")}.`
                 : ""
         const messages: Record<ParseErrorCode, string> = {
-            UNKNOWN_FLAG: `Flag "${argument}" is not recognized.${knownList}`,
+            UNKNOWN_FLAG: `Flag "${argument.length === 1 ? "-" : "--"}${argument}" is not recognized.${knownList}`,
             INVALID_FORMAT: `Argument "${argument}" is malformed${suffix}.`,
             INVALID_SCHEMA: `Schema definition for "${argument}" is invalid${suffix}.`
         }
@@ -293,7 +293,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 )
             }
             if (strict && !definitions.has(name)) {
-                throw new ParseError("UNKNOWN_FLAG", arg, known)
+                throw new ParseError("UNKNOWN_FLAG", name, known)
             }
             const { definition, values, arity } = longflag(
                 name,
@@ -328,7 +328,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 for (let j = 0; j < flagChars.length - 1; j++) {
                     const alias = flagChars[j]
                     if (strict && !definitions.has(alias)) {
-                        throw new ParseError("UNKNOWN_FLAG", `-${alias}`, known)
+                        throw new ParseError("UNKNOWN_FLAG", alias, known)
                     }
                     const { definition, values, arity } = shortflag(
                         alias,
@@ -340,7 +340,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                 }
                 const alias = flagChars[flagChars.length - 1]
                 if (strict && !definitions.has(alias)) {
-                    throw new ParseError("UNKNOWN_FLAG", `-${alias}`, known)
+                    throw new ParseError("UNKNOWN_FLAG", alias, known)
                 }
                 const definition = definitions.get(alias) ?? {
                     name: alias,
@@ -352,7 +352,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             for (let j = 0; j < aliases.length; j++) {
                 const alias = aliases[j]
                 if (strict && !definitions.has(alias)) {
-                    throw new ParseError("UNKNOWN_FLAG", `-${alias}`, known)
+                    throw new ParseError("UNKNOWN_FLAG", alias, known)
                 }
                 const inliner = inlineflag(j, aliases, definitions.get(alias))
                 if (inliner != null) {

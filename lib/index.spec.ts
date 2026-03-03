@@ -147,7 +147,7 @@ describe("argvex with schema", () => {
             expect((error as ParseError).code).toBe(
                 "UNKNOWN_FLAG" satisfies ParseErrorCode
             )
-            expect((error as ParseError).argument).toBe("--tea")
+            expect((error as ParseError).argument).toBe("tea")
             expect((error as ParseError).known).toStrictEqual([
                 "version",
                 "decaf",
@@ -176,7 +176,7 @@ describe("argvex with schema", () => {
             expect((error as ParseError).code).toBe(
                 "UNKNOWN_FLAG" satisfies ParseErrorCode
             )
-            expect((error as ParseError).argument).toBe("-u")
+            expect((error as ParseError).argument).toBe("u")
             expect((error as ParseError).known).toStrictEqual([
                 "version",
                 "decaf",
@@ -594,6 +594,15 @@ describe("argvex edge cases with schema", () => {
         })
     })
 
+    it("should honor = assignment on short flag even when arity is 0", () => {
+        const schema = { verbose: { alias: "v", arity: 0 } }
+        const argv = ["-v=true"]
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            verbose: ["true"]
+        })
+    })
+
     it("should resolve alias when used as long flag prefix", () => {
         const schema = {
             decaf: { alias: "d", arity: 0 },
@@ -627,6 +636,16 @@ describe("argvex edge cases with schema", () => {
             _: [],
             a: [],
             b: ["c"]
+        })
+    })
+
+    it("should force leading flags to arity 0 in group with = even when schema says otherwise", () => {
+        const schema = { a: { arity: 1 }, b: { arity: 1 } }
+        const argv = ["-ab=val"]
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: [],
+            a: [],
+            b: ["val"]
         })
     })
 
@@ -711,6 +730,15 @@ describe("argvex arity consumption", () => {
             _: [],
             unknown: ["val1", "val2"],
             size: ["xl"]
+        })
+    })
+
+    it("should stop consuming when -- appears mid-arity", () => {
+        const schema = { milk: { arity: 3 } }
+        const argv = "--milk oat -- almond".split(" ")
+        expect(argvex({ argv, schema })).toStrictEqual({
+            _: ["almond"],
+            milk: ["oat"]
         })
     })
 
