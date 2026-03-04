@@ -34,15 +34,15 @@ export class ParseError extends Error {
     }
 }
 
-export type Flag = { alias?: string; arity?: number }
+export type FlagDef = { alias?: string; arity?: number }
 
-export type ArgvexSchema = Record<string, Flag>
+export type ArgvexSchema = Record<string, FlagDef>
 
 export type InferArgvex<
     TSchema extends ArgvexSchema | undefined,
     TStrict extends boolean = false
 > =
-    TSchema extends Record<infer K extends string, Flag>
+    TSchema extends Record<infer K extends string, FlagDef>
         ? string extends K
             ? { _: string[] } & { [flag: string]: string[] | undefined }
             : TStrict extends true
