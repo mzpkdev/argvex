@@ -35,11 +35,13 @@ Table of Contents
 * [Getting started](#getting-started)
   * [How to install](#how-to-install)
   * [How to use](#how-to-use)
+  * [Custom argv](#custom-argv)
   * [Aliases](#aliases)
   * [POSIX-flavoured](#posix-flavoured)
   * [Repeating flags](#repeating-flags)
   * [Strict Mode](#strict-mode)
   * [Permissive Mode](#permissive-mode)
+  * [TypeScript](#typescript)
 * [Examples of common patterns](#examples-of-common-patterns)
   * [Case with required flags](#case-with-required-flags)
   * [Case with default values](#case-with-default-values)
@@ -118,6 +120,8 @@ const args = argvex()
 // args -> { _: [ "brewer", "brew", "espresso" ], "size": [ "medium" ], shots: [ "3" ], milk: [ "none" ], temperature: [ "92" ], crema: [ "thick" ] }
 ```
 
+`_` is the positionals array — it collects every argument that isn't consumed as a flag value: commands, subcommands, file paths, bare words, and everything after `--`.
+
 A GNU-flavoured value assign using "=" works too!
 
 ```sh
@@ -191,9 +195,20 @@ const args = argvex()
 
 **Note on schema-less parsing:** Without a schema, every flag consumes all following arguments until the next flag or `--` is encountered. This means `--output file.txt input.txt` will assign both `file.txt` and `input.txt` to the `output` flag, not treat `input.txt` as a positional. To control consumption explicitly, use a schema with `arity` values — see [POSIX-flavoured](#posix-flavoured) and [Repeating flags](#repeating-flags) sections below.
 
+### Custom argv
+
+By default `argvex` reads from `process.argv.slice(2)`. Pass `argv` to parse any string array instead — useful for testing, subcommand delegation, or piping parsed chunks between handlers.
+
+```typescript
+import argvex from "argvex"
+
+const args = argvex({ argv: ["--size", "large", "--shots", "2"] })
+// args -> { _: [], size: [ "large" ], shots: [ "2" ] }
+```
+
 ### Aliases
 
-While you can code your own support for aliases easily, 
+While you can code your own support for aliases easily,
 `argvex` can handle those out-of-the-box if you pass a minimal schema to it.
 
 ```sh
@@ -212,6 +227,8 @@ const args = argvex({ schema })
 ```
 
 Single-character long flags resolve through aliases — `--d` is equivalent to `-d` when `d` is defined as an alias in the schema. Both resolve to the canonical flag name.
+
+`alias` accepts exactly one character. Multiple aliases per flag are not supported.
 
 ### POSIX-flavoured
 
@@ -249,10 +266,25 @@ const args = argvex({ schema })
 
 ### Repeating flags
 
-By default, repeating a flag accumulates values into the array.
+By default, repeating a flag accumulates values into the array — each invocation appends to the same key.
 
 ```sh
 brewer brew flat-white --milk steamed --milk foamed --milk microfoam
+```
+```typescript
+import argvex from "argvex"
+
+const schema = {
+  milk: { arity: 1 },
+}
+const args = argvex({ schema })
+// args -> { _: [ "brewer", "brew", "flat-white" ], milk: [ "steamed", "foamed", "microfoam" ] }
+```
+
+`arity` controls how many values a single invocation consumes from the stream — not how many total values accumulate. A single `--milk` with `arity: 3` eats the next three tokens in one shot:
+
+```sh
+brewer brew flat-white --milk steamed foamed microfoam
 ```
 ```typescript
 import argvex from "argvex"
@@ -306,6 +338,55 @@ const args = argvex({ schema, strict: true, permissive: true })
 ```
 
 Unknown flags preserve their raw form in `_` — including dashes and inline `=` values. Without `strict`, `permissive` has no effect.
+
+### TypeScript
+
+argvex ships three public types for consumers who want full type coverage.
+
+```typescript
+import argvex, { FlagDef, ArgvexSchema, InferArgvex } from "argvex"
+```
+
+**`FlagDef`** — the shape of a single flag definition:
+
+```typescript
+const flag: FlagDef = { alias: "s", arity: 1 }
+```
+
+**`ArgvexSchema`** — use this to annotate a schema defined outside the `argvex()` call:
+
+```typescript
+const schema: ArgvexSchema = {
+  size: { alias: "s", arity: 1 },
+  shots: { alias: "h", arity: 1 },
+  decaf: { alias: "d", arity: 0 },
+}
+const args = argvex({ schema })
+```
+
+**`InferArgvex<TSchema, TStrict?>`** — infers the result type from a schema. Use `typeof schema` to thread the literal type through:
+
+```typescript
+const schema = {
+  size: { alias: "s", arity: 1 },
+  shots: { alias: "h", arity: 1 },
+} satisfies ArgvexSchema
+
+type Args = InferArgvex<typeof schema>
+// { _: string[]; size?: string[]; shots?: string[]; [flag: string]: string[] | undefined }
+
+const brew = (args: Args) => {
+  const size = args.size?.[0] ?? "medium"
+  // ...
+}
+```
+
+Pass `true` as the second argument to get the strict variant — no index signature, unknown keys are type errors:
+
+```typescript
+type StrictArgs = InferArgvex<typeof schema, true>
+// { _: string[]; size?: string[]; shots?: string[] }
+```
 
 ### Examples of common patterns
 
@@ -362,9 +443,26 @@ try {
     // todo: process args here
 } catch (error) {
     if (error instanceof ParseError) {
-        console.error('Invalid command line arguments')
+        console.error(error.code, error.argument, error.known)
         process.exit(1)
     }
     throw error
 }
 ```
+
+`ParseError` exposes three structured properties alongside the human-readable `.message`:
+
+| Property | Type | Description |
+|---|---|---|
+| `.code` | `ParseErrorCode` | Machine-readable error code (see below) |
+| `.argument` | `string` | The bare flag or schema key that caused the error (no dash prefix) |
+| `.known` | `string[]` | Known flag names — populated only for `UNKNOWN_FLAG`, otherwise `[]` |
+
+**Error codes:**
+
+| Code | Thrown when | `.known` |
+|---|---|---|
+| `UNKNOWN_FLAG` | An unrecognized flag is passed in strict mode | All schema flag names |
+| `INVALID_FORMAT` | A malformed argument is encountered (e.g. `---triple-dash`) | `[]` |
+| `INVALID_SCHEMA` | A schema definition is invalid (bad alias, reserved name, etc.) | `[]` |
+| `RESERVED_NAME` | A flag named `_` is passed (conflicts with the positionals key) | `[]` |
