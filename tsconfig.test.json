@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vitest/globals"],
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
+  },
+  "include": [
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "vitest.setup.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": ["node_modules"]
+}
