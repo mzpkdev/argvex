@@ -6,6 +6,7 @@
     "noUnusedParameters": false
   },
   "include": [
+    "lib/**/*.ts",
     "**/*.spec.ts",
     "**/*.test.ts",
     "vitest.setup.ts",
