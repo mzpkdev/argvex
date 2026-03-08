@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
-import argvex, { ParseError, type ParseErrorCode } from "./index"
+import { ParseError, type ParseErrorCode } from "./index"
+import argvex from "./rewrite/index"
 
 describe("argvex", () => {
     context("without schema", () => {
