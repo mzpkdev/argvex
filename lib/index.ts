@@ -7,11 +7,7 @@ export class ParseError extends Error {
     code: ParseErrorCode
     argument: string
 
-    constructor(
-        code: ParseErrorCode,
-        argument: string,
-        reason?: string
-    ) {
+    constructor(code: ParseErrorCode, argument: string, reason?: string) {
         const suffix = reason ? `: ${reason}` : ""
         const messages: Record<ParseErrorCode, string> = {
             INVALID_FORMAT: `Argument "${argument}" is malformed${suffix}.`,
@@ -32,9 +28,13 @@ export type ArgvexSchema = Record<string, FlagDef>
 export type InferArgvex<TSchema extends ArgvexSchema | undefined> =
     TSchema extends Record<infer K extends string, FlagDef>
         ? string extends K
-            ? { _: string[]; __: string[] } & { [flag: string]: string[] | undefined }
+            ? { _: string[]; __: string[] } & {
+                  [flag: string]: string[] | undefined
+              }
             : { _: string[]; __: string[] } & Partial<{ [P in K]: string[] }>
-        : { _: string[]; __: string[] } & { [flag: string]: string[] | undefined }
+        : { _: string[]; __: string[] } & {
+              [flag: string]: string[] | undefined
+          }
 
 export type ArgvexOptions<
     TSchema extends ArgvexSchema | undefined = ArgvexSchema | undefined
@@ -109,18 +109,10 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
     const definitions = new Map<string, Definition>()
     for (const [name, def] of Object.entries(schema)) {
         if (name === "_") {
-            throw new ParseError(
-                "INVALID_SCHEMA",
-                name,
-                'key cannot be "_"'
-            )
+            throw new ParseError("INVALID_SCHEMA", name, 'key cannot be "_"')
         }
         if (name === "__") {
-            throw new ParseError(
-                "INVALID_SCHEMA",
-                name,
-                'key cannot be "__"'
-            )
+            throw new ParseError("INVALID_SCHEMA", name, 'key cannot be "__"')
         }
         if (def.alias != null && def.alias.length !== 1) {
             throw new ParseError(
@@ -130,32 +122,16 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             )
         }
         if (def.alias === "_") {
-            throw new ParseError(
-                "INVALID_SCHEMA",
-                name,
-                'alias cannot be "_"'
-            )
+            throw new ParseError("INVALID_SCHEMA", name, 'alias cannot be "_"')
         }
         if (def.alias === "-") {
-            throw new ParseError(
-                "INVALID_SCHEMA",
-                name,
-                'alias cannot be "-"'
-            )
+            throw new ParseError("INVALID_SCHEMA", name, 'alias cannot be "-"')
         }
         if (def.alias === "=") {
-            throw new ParseError(
-                "INVALID_SCHEMA",
-                name,
-                "alias cannot be '='"
-            )
+            throw new ParseError("INVALID_SCHEMA", name, "alias cannot be '='")
         }
         if (name === "") {
-            throw new ParseError(
-                "INVALID_SCHEMA",
-                name,
-                "key cannot be empty"
-            )
+            throw new ParseError("INVALID_SCHEMA", name, "key cannot be empty")
         }
         if (name.includes("=")) {
             throw new ParseError(
@@ -239,7 +215,8 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     isFlag = true
                 } else {
                     const eq = arg.indexOf("=", 2)
-                    const name = eq === -1 ? arg.substring(2) : arg.substring(2, eq)
+                    const name =
+                        eq === -1 ? arg.substring(2) : arg.substring(2, eq)
                     isFlag = definitions.has(name)
                 }
             } else if (

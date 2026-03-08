@@ -11,10 +11,6 @@ export default defineConfig({
     test: {
         globals: true,
         environment: "node",
-        include: ["**/*.spec.ts", "**/*.test.ts"],
-        setupFiles: ["./vitest.setup.ts"],
-        typecheck: {
-            tsconfig: "./tsconfig.test.json"
-        }
+        include: ["**/*.spec.ts", "**/*.test.ts"]
     }
 })

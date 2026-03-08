@@ -11,7 +11,9 @@ describe("argvex", () => {
         })
 
         it("should support end-of-options delimiter", () => {
-            const argv = "brewer make --milk oat -- latte --not-a-flag".split(" ")
+            const argv = "brewer make --milk oat -- latte --not-a-flag".split(
+                " "
+            )
             expect(argvex({ argv })).toStrictEqual({
                 _: ["brewer", "make", "latte", "--not-a-flag"],
                 __: [],
@@ -73,7 +75,9 @@ describe("argvex", () => {
         })
 
         it("should parse a mix of long and short flags", () => {
-            const argv = "brewer make latte -ds xl --shots=2 --milk oat".split(" ")
+            const argv = "brewer make latte -ds xl --shots=2 --milk oat".split(
+                " "
+            )
             expect(argvex({ argv })).toStrictEqual({
                 _: ["brewer", "make", "latte"],
                 __: [],
@@ -191,7 +195,9 @@ describe("argvex", () => {
 
         it("should parse short flags as aliases", () => {
             const argv =
-                "brewer make -d no -s xs -h 0 -m oat almond cow latte".split(" ")
+                "brewer make -d no -s xs -h 0 -m oat almond cow latte".split(
+                    " "
+                )
             expect(argvex({ argv, schema })).toStrictEqual({
                 _: ["brewer", "make", "no", "latte"],
                 __: [],
@@ -214,9 +220,8 @@ describe("argvex", () => {
         })
 
         it("should accumulate repeated flags by default", () => {
-            const argv = "brewer make latte --milk oat --milk=almond -mcow".split(
-                " "
-            )
+            const argv =
+                "brewer make latte --milk oat --milk=almond -mcow".split(" ")
             expect(argvex({ argv, schema })).toStrictEqual({
                 _: ["brewer", "make", "latte"],
                 __: [],
@@ -235,7 +240,10 @@ describe("argvex", () => {
         })
 
         it("should push next arg to positionals when flag has zero arity", () => {
-            const schema = { decaf: { alias: "d", arity: 0 }, size: { alias: "s", arity: 1 } }
+            const schema = {
+                decaf: { alias: "d", arity: 0 },
+                size: { alias: "s", arity: 1 }
+            }
             const argv = "--decaf oat".split(" ")
             expect(argvex({ argv, schema })).toStrictEqual({
                 _: ["oat"],
@@ -245,7 +253,10 @@ describe("argvex", () => {
         })
 
         it("should parse inline value after zero-arity flags in a group", () => {
-            const schema = { decaf: { alias: "d", arity: 0 }, size: { alias: "s", arity: 1 } }
+            const schema = {
+                decaf: { alias: "d", arity: 0 },
+                size: { alias: "s", arity: 1 }
+            }
             const argv = "-dsoat".split(" ")
             expect(argvex({ argv, schema })).toStrictEqual({
                 _: [],
@@ -256,7 +267,10 @@ describe("argvex", () => {
         })
 
         it("should parse short flag = syntax with schema alias", () => {
-            const schema = { decaf: { alias: "d", arity: 0 }, size: { alias: "s", arity: 1 } }
+            const schema = {
+                decaf: { alias: "d", arity: 0 },
+                size: { alias: "s", arity: 1 }
+            }
             const argv = "-ds=medium".split(" ")
             expect(argvex({ argv, schema })).toStrictEqual({
                 _: [],
@@ -267,7 +281,10 @@ describe("argvex", () => {
         })
 
         it("should accumulate values across long, =, short, and inline syntaxes", () => {
-            const schema = { decaf: { alias: "d", arity: 0 }, size: { alias: "s", arity: 1 } }
+            const schema = {
+                decaf: { alias: "d", arity: 0 },
+                size: { alias: "s", arity: 1 }
+            }
             const argv = "--size xl --size=md -sxs".split(" ")
             expect(argvex({ argv, schema })).toStrictEqual({
                 _: [],
@@ -599,10 +616,12 @@ describe("argvex", () => {
             })
 
             it("should reject __ as a schema key", () => {
-                expect(() => argvex({
-                    argv: [],
-                    schema: { __: { arity: 0 } }
-                })).toThrowError(ParseError)
+                expect(() =>
+                    argvex({
+                        argv: [],
+                        schema: { __: { arity: 0 } }
+                    })
+                ).toThrowError(ParseError)
                 try {
                     argvex({ argv: [], schema: { __: { arity: 0 } } })
                 } catch (error) {
@@ -612,7 +631,9 @@ describe("argvex", () => {
             })
 
             it("should reject --__ at parse time", () => {
-                expect(() => argvex({ argv: ["--__"] })).toThrowError(ParseError)
+                expect(() => argvex({ argv: ["--__"] })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: ["--__"] })
                 } catch (error) {
@@ -967,17 +988,17 @@ describe("argvex", () => {
                 expect(argvex({ argv })).toStrictEqual({
                     _: [],
                     __: [],
-                    "café": ["latte"]
+                    café: ["latte"]
                 })
             })
 
             it("should parse unicode flag names with schema", () => {
-                const schema = { "café": { arity: 1 } }
+                const schema = { café: { arity: 1 } }
                 const argv = ["--café", "latte"]
                 expect(argvex({ argv, schema })).toStrictEqual({
                     _: [],
                     __: [],
-                    "café": ["latte"]
+                    café: ["latte"]
                 })
             })
 
@@ -986,7 +1007,7 @@ describe("argvex", () => {
                 expect(argvex({ argv })).toStrictEqual({
                     _: [],
                     __: [],
-                    "café": ["latte"]
+                    café: ["latte"]
                 })
             })
         })
@@ -1055,7 +1076,9 @@ describe("argvex", () => {
         context("alias rules", () => {
             it("should throw INVALID_SCHEMA for multi-character alias", () => {
                 const schema = { verbose: { alias: "verb" } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 expect(() => argvex({ argv: [], schema })).toThrowError(
                     `Schema definition for "verbose" is invalid: alias must be a single character.`
                 )
@@ -1071,7 +1094,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for empty string alias", () => {
                 const schema = { verbose: { alias: "" } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 expect(() => argvex({ argv: [], schema })).toThrowError(
                     `Schema definition for "verbose" is invalid: alias must be a single character.`
                 )
@@ -1086,8 +1111,13 @@ describe("argvex", () => {
             })
 
             it("should throw INVALID_SCHEMA for duplicate alias across entries", () => {
-                const schema = { verbose: { alias: "v" }, version: { alias: "v" } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                const schema = {
+                    verbose: { alias: "v" },
+                    version: { alias: "v" }
+                }
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 expect(() => argvex({ argv: [], schema })).toThrowError(
                     `Schema definition for "version" is invalid: alias collides with an existing flag or alias.`
                 )
@@ -1103,7 +1133,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA when alias collides with another flag name", () => {
                 const schema = { verbose: { alias: "v" }, v: {} }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1120,7 +1152,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for alias _", () => {
                 const schema = { verbose: { alias: "_" } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1131,7 +1165,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for alias -", () => {
                 const schema = { verbose: { alias: "-" } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1142,7 +1178,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for alias =", () => {
                 const schema = { verbose: { alias: "=" } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1157,7 +1195,9 @@ describe("argvex", () => {
         context("arity rules", () => {
             it("should throw INVALID_SCHEMA for negative arity", () => {
                 const schema = { verbose: { arity: -1 } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 expect(() => argvex({ argv: [], schema })).toThrowError(
                     `Schema definition for "verbose" is invalid: arity cannot be negative.`
                 )
@@ -1178,7 +1218,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for arity NaN", () => {
                 const schema = { flag: { arity: NaN } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1189,7 +1231,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for fractional arity", () => {
                 const schema = { flag: { arity: 1.5 } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1200,7 +1244,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for Infinity arity", () => {
                 const schema = { flag: { arity: Infinity } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1213,7 +1259,9 @@ describe("argvex", () => {
         context("reserved names", () => {
             it("should throw INVALID_SCHEMA for schema key _", () => {
                 const schema = { _: { arity: 1 } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1224,7 +1272,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for schema key __", () => {
                 const schema = { __: { arity: 0 } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1237,7 +1287,9 @@ describe("argvex", () => {
         context("invalid keys", () => {
             it("should throw INVALID_SCHEMA for empty string key", () => {
                 const schema = { "": { arity: 1 } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1250,7 +1302,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for key containing =", () => {
                 const schema = { "foo=bar": { arity: 1 } }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1263,7 +1317,9 @@ describe("argvex", () => {
 
             it("should throw INVALID_SCHEMA for key starting with -", () => {
                 const schema = { "-flag": {} }
-                expect(() => argvex({ argv: [], schema })).toThrowError(ParseError)
+                expect(() => argvex({ argv: [], schema })).toThrowError(
+                    ParseError
+                )
                 try {
                     argvex({ argv: [], schema })
                 } catch (error) {
@@ -1293,7 +1349,10 @@ describe("argvex", () => {
 
     context("type inference", () => {
         it("should route unknown flags to __ with schema", () => {
-            const schema = { verbose: { arity: 0 }, size: { arity: 1 } } as const
+            const schema = {
+                verbose: { arity: 0 },
+                size: { arity: 1 }
+            } as const
             const result = argvex({
                 argv: "--verbose --unknown val".split(" "),
                 schema
@@ -1304,7 +1363,10 @@ describe("argvex", () => {
         })
 
         it("should have typed keys with literal schema", () => {
-            const schema = { verbose: { arity: 0 }, size: { arity: 1 } } as const
+            const schema = {
+                verbose: { arity: 0 },
+                size: { arity: 1 }
+            } as const
             const result = argvex({
                 argv: "--verbose --size xl".split(" "),
                 schema
@@ -1346,3 +1408,7 @@ describe("ParseError", () => {
         }
     })
 })
+
+function context(description: string, block: () => void): void {
+    describe(description, block)
+}
