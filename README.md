@@ -12,11 +12,10 @@
 <p align="center">
   <img src="./.github/assets/main-banner.gif" height="160" align="center" />
   <p align="center">
-    <strong>argvex</strong> is a lightweight and unopinionated CLI argument parser <br>
-      — just a parsing tool, not a framework
+    <strong>argvex</strong> — a CLI argument parser with a predictable output shape
     <br />
     <br />
-    <a href="#how-to-use"><strong>Explore the API »</strong></a>
+    <a href="#getting-started"><strong>Explore the API »</strong></a>
     <br />
     <br />
     <a href="https://github.com/mzpkdev/argvex/issues">Report a bug</a>
@@ -29,38 +28,92 @@
 Table of Contents
 ------------------
 
-* [Overview](#overview)
-  * [Why argvex?](#why-argvex)
-  * [Key Features](#key-features)
-* [Getting started](#getting-started)
-  * [How to install](#how-to-install)
-  * [How to use](#how-to-use)
+* [Why argvex?](#why-argvex)
+* [Core Principles](#core-principles)
+* [Key Features](#key-features)
+* [Getting Started](#getting-started)
+  * [Install](#install)
+  * [Basic Usage](#basic-usage)
+  * [Short Flags & Groups](#short-flags--groups)
+  * [Value Assignment with `=`](#value-assignment-with-)
+  * [End-of-Options `--`](#end-of-options---)
   * [Custom argv](#custom-argv)
+* [Schema](#schema)
   * [Aliases](#aliases)
-  * [POSIX-flavoured](#posix-flavoured)
-  * [Repeating flags](#repeating-flags)
-  * [Unknown Flags](#unknown-flags)
-  * [TypeScript](#typescript)
-* [Examples of common patterns](#examples-of-common-patterns)
-  * [Case with required flags](#case-with-required-flags)
-  * [Case with default values](#case-with-default-values)
-  * [Case with value coercion](#case-with-value-coercion)
-  * [Case with error handling](#case-with-error-handling)
+  * [Arity](#arity)
+  * [Unknown Flags (`__`)](#unknown-flags-__)
+  * [Stop Early](#stop-early)
+* [TypeScript](#typescript)
+* [Common Patterns](#common-patterns)
+  * [Boolean flags](#boolean-flags)
+  * [Required flags](#required-flags)
+  * [Default values](#default-values)
+  * [Value coercion](#value-coercion)
+  * [`--no-*` negation](#--no--negation)
+  * [Subcommand delegation](#subcommand-delegation)
+  * [Error handling](#error-handling)
 
-Overview
----------
+Why argvex?
+------------
 
-### Why argvex?
+Most parsers guess your types for you.
 
-You want to roll-your-own CLI, but argument parsing is such a headache?
-Let `argvex` handle the annoying part, and nothing else.
+```sh
+app --verbose --count 5 -abc --no-ding --name hello
+```
 
-`argvex` is a minimalist argument parser that stays out of your way with little to no API,
-so you can keep full control, define your own rules, and avoid framework baggage.
+**minimist** / **mri** — type roulette:
 
-### Key Features
+```js
+{
+  _: [],
+  verbose: true,       // boolean
+  count: 5,            // number
+  a: true, b: true, c: true,  // booleans
+  ding: false,         // negated boolean
+  name: "hello"        // string
+}
+// Return type: string | number | boolean — depends on the value
+```
+
+**arg** — schema required, throws on unknowns:
+
+```js
+// Must define every flag upfront with coercion functions
+const args = arg({ "--verbose": Boolean, "--count": Number, "--name": String })
+// Unknown flags throw: "Unknown or unexpected option: --no-ding"
+// Return type: string | number | boolean — depends on the coercion function
+```
+
+**argvex** — every flag is `string[]`, always:
+
+```js
+{
+  _: [],
+  __: [],
+  verbose: [],             // present, no value
+  count: [ "5" ],          // string, your app decides if it's a number
+  a: [], b: [], c: [],     // present, no value
+  "no-ding": [],           // it's a flag called "no-ding", not magic
+  name: [ "hello" ]        // string
+}
+// Return type: string[] — every flag, every time
+```
+
+No guessing. No coercion. No `typeof args.count === "number" || typeof args.count === "string"` defensive checks.
+You get a consistent shape, and your application decides what it means.
+
+Core Principles
+----------------
+
+- **Predictable output** — every flag is `string[]`, every time. No type guessing, no coercion, no surprises.
+- **Parse, don't interpret** — argvex structures your argv. Your app decides what `--verbose` or `--count 5` means.
+- **Schema when you need it** — works raw out of the box. Add a schema for aliases, arity control, and unknown-flag detection.
 
 <div align="center">
+
+Key Features
+-------------
 
 <table>
   <tbody>
@@ -69,82 +122,56 @@ so you can keep full control, define your own rules, and avoid framework baggage
       <td>One file. Fast. No tree bloat.</td>
     </tr>
     <tr>
-      <td>🕹️️ Control over configuration</td>
-      <td>You define behavior, types, defaults — all your choice</td>
-    </tr>
-    <tr>
-      <td>⚙️ Zero-assumptions</td>
-      <td>Everything is explicit, no coercion, no surprises.</td>
+      <td>🔮 Predictable shape</td>
+      <td>Every flag is <code>string[]</code>. Always.</td>
     </tr>
     <tr>
       <td>🔌 Schema-optional</td>
-      <td>Works raw out of the box, add constraints only when you need it.</td>
+      <td>Works raw out of the box. Add constraints when you need them.</td>
     </tr>
     <tr>
       <td>🐚 UNIX philosophy</td>
-      <td>Do one thing well, stay composable.</td>
+      <td>Do one thing well. Stay composable.</td>
     </tr>
     <tr>
       <td>💙 TypeScript</td>
-      <td>Type definitions right out of the box.</td>
+      <td>Full type inference from your schema.</td>
     </tr>
   </tbody>
 </table>
 
 </div>
 
-Getting started
+Getting Started
 ----------------
 
-`argvex` gives you a structured view of your command-line input — flags, values,
-and operands — without forcing schemas, coercion, or assumptions.
-
-### How to install
+### Install
 
 ```shell
 npm install argvex
 ```
 
-### How to use
+### Basic Usage
 
-You can just call `argvex()` to get structured `process.argv` output.
-
-```sh
-brewer brew espresso --size medium --shots 3 --milk none --temperature 92 --crema thick
-```
-```typescript
-import argvex from "argvex"
-
-const args = argvex()
-// args -> { _: [ "brewer", "brew", "espresso" ], "size": [ "medium" ], shots: [ "3" ], milk: [ "none" ], temperature: [ "92" ], crema: [ "thick" ] }
-```
-
-`_` is the positionals array — it collects every argument that isn't consumed as a flag value: commands, subcommands, file paths, bare words, and everything after `--`.
-
-A GNU-flavoured value assign using "=" works too!
+Call `argvex()` to get structured `process.argv` output.
 
 ```sh
-brewer brew cappuccino --size=large --shots=2 --milk=steamed --foam=thick
+brewer brew espresso --size medium --shots 3 --milk none
 ```
 ```typescript
 import argvex from "argvex"
 
 const args = argvex()
-// args -> { _: [ "brewer", "brew", "cappuccino" ], "size": [ "large" ], shots: [ "2" ], milk: [ "steamed" ], foam: [ "thick" ] }
+// args -> { _: [ "brewer", "brew", "espresso" ], size: [ "medium" ], shots: [ "3" ], milk: [ "none" ] }
 ```
 
-Boolean flags are present or absent — no value needed.
+`_` is the positionals array — commands, subcommands, file paths, bare words, and everything after `--`.
 
-```typescript
-import argvex from "argvex"
+**Note:** Without a schema, every flag consumes all following arguments until the next flag or `--` is encountered. This means `--output file.txt input.txt` will assign both `file.txt` and `input.txt` to the `output` flag, not treat `input.txt` as a positional. To control this, use a schema with `arity` — see [Arity](#arity).
 
-const args = argvex()
-if (args.decaf) {
-    console.log("Making a decaf coffee!")
-}
-```
+### Short Flags & Groups
 
-You can use standalone short flags or use them in groups.
+Standalone short flags and groups.
 
 ```sh
 brewer brew americano -qs -m water -t 85
@@ -153,19 +180,21 @@ brewer brew americano -qs -m water -t 85
 import argvex from "argvex"
 
 const args = argvex()
-// args -> { _: [ "brewer", "brew", "americano" ], "q": [], "s": [], m: [ "water" ], t: [ "85" ] }
+// args -> { _: [ "brewer", "brew", "americano" ], q: [], s: [], m: [ "water" ], t: [ "85" ] }
 ```
 
-Short flags also support the `=` syntax for assigning values.
+### Value Assignment with `=`
+
+Long flags and short flags both support `=` syntax.
 
 ```sh
-brewer brew latte -s=large -m=oat
+brewer brew latte --size=large -m=oat
 ```
 ```typescript
 import argvex from "argvex"
 
 const args = argvex()
-// args -> { _: [ "brewer", "brew", "latte" ], s: [ "large" ], m: [ "oat" ] }
+// args -> { _: [ "brewer", "brew", "latte" ], size: [ "large" ], m: [ "oat" ] }
 ```
 
 This works with grouped flags too — the value is assigned to the last flag in the group.
@@ -180,7 +209,9 @@ const args = argvex()
 // args -> { _: [ "brewer", "brew", "latte" ], d: [], s: [ "medium" ] }
 ```
 
-Use `--` (end-of-options delimiter) to separate flags from operands that might look like flags.
+### End-of-Options `--`
+
+Use `--` to separate flags from operands that might look like flags.
 
 ```sh
 brewer brew --milk oat -- --not-a-flag latte
@@ -192,11 +223,9 @@ const args = argvex()
 // args -> { _: [ "brewer", "brew", "--not-a-flag", "latte" ], milk: [ "oat" ] }
 ```
 
-**Note on schema-less parsing:** Without a schema, every flag consumes all following arguments until the next flag or `--` is encountered. This means `--output file.txt input.txt` will assign both `file.txt` and `input.txt` to the `output` flag, not treat `input.txt` as a positional. To control consumption explicitly, use a schema with `arity` values — see [POSIX-flavoured](#posix-flavoured) and [Repeating flags](#repeating-flags) sections below.
-
 ### Custom argv
 
-By default `argvex` reads from `process.argv.slice(2)`. Pass `argv` to parse any string array instead — useful for testing, subcommand delegation, or piping parsed chunks between handlers.
+By default `argvex` reads from `process.argv.slice(2)`. Pass `argv` to parse any string array — useful for testing, subcommand delegation, or piping parsed chunks between handlers.
 
 ```typescript
 import argvex from "argvex"
@@ -205,10 +234,14 @@ const args = argvex({ argv: ["--size", "large", "--shots", "2"] })
 // args -> { _: [], size: [ "large" ], shots: [ "2" ] }
 ```
 
+Schema
+-------
+
+Pass a schema to enable aliases, control arity, and detect unknown flags.
+
 ### Aliases
 
-While you can code your own support for aliases easily,
-`argvex` can handle those out-of-the-box if you pass a minimal schema to it.
+Map short flags to long flag names. Aliases accept exactly one character.
 
 ```sh
 brewer brew mocha -d -m oat -c dark
@@ -222,14 +255,12 @@ const schema = {
   chocolate: { alias: "c" }
 }
 const args = argvex({ schema })
-// args -> { _: [ "brewer", "brew", "mocha" ], "decaf": [], milk: [ "oat" ], chocolate: [ "dark" ] }
+// args -> { _: [ "brewer", "brew", "mocha" ], __: [], decaf: [], milk: [ "oat" ], chocolate: [ "dark" ] }
 ```
 
-`alias` accepts exactly one character. Multiple aliases per flag are not supported.
+### Arity
 
-### POSIX-flavoured
-
-While `argvex` aims at being a minimalist tool, it can support most of the POSIX-flavoured syntax if you pass a schema to it.
+`arity` controls how many values a flag consumes from the argument stream.
 
 ```sh
 brewer brew -dsmedium -h2 macchiato
@@ -243,27 +274,10 @@ const schema = {
   shots: { alias: "h", arity: 1 },
 }
 const args = argvex({ schema })
-// args -> { _: [ "brewer", "brew", "macchiato" ], "decaf": [], size: [ "medium" ], shots: [ "2" ] }
+// args -> { _: [ "brewer", "brew", "macchiato" ], __: [], decaf: [], size: [ "medium" ], shots: [ "2" ] }
 ```
 
-`arity` controls how many values a flag consumes from the argument stream — the tokens that follow it. The `=` syntax (`--flag=value`) is direct assignment: the value is embedded in the token itself, so it bypasses stream consumption entirely. This means `--verbose=true` assigns `"true"` to `verbose` regardless of its `arity` setting — even `arity: 0`.
-
-```sh
-brewer brew espresso --verbose=true
-```
-```typescript
-import argvex from "argvex"
-
-const schema = {
-  verbose: { arity: 0 },
-}
-const args = argvex({ schema })
-// args -> { _: [ "brewer", "brew", "espresso" ], verbose: [ "true" ] }
-```
-
-### Repeating flags
-
-By default, repeating a flag accumulates values into the array — each invocation appends to the same key.
+Repeating a flag accumulates values — each invocation appends to the same key.
 
 ```sh
 brewer brew flat-white --milk steamed --milk foamed --milk microfoam
@@ -275,10 +289,10 @@ const schema = {
   milk: { arity: 1 },
 }
 const args = argvex({ schema })
-// args -> { _: [ "brewer", "brew", "flat-white" ], milk: [ "steamed", "foamed", "microfoam" ] }
+// args -> { _: [ "brewer", "brew", "flat-white" ], __: [], milk: [ "steamed", "foamed", "microfoam" ] }
 ```
 
-`arity` controls how many values a single invocation consumes from the stream — not how many total values accumulate. A single `--milk` with `arity: 3` eats the next three tokens in one shot:
+A single flag with higher arity consumes multiple tokens in one shot:
 
 ```sh
 brewer brew flat-white --milk steamed foamed microfoam
@@ -290,14 +304,29 @@ const schema = {
   milk: { arity: 3 },
 }
 const args = argvex({ schema })
-// args -> { _: [ "brewer", "brew", "flat-white" ], milk: [ "steamed", "foamed", "microfoam" ] }
+// args -> { _: [ "brewer", "brew", "flat-white" ], __: [], milk: [ "steamed", "foamed", "microfoam" ] }
 ```
 
-### Unknown Flags
+The `=` syntax (`--flag=value`) bypasses arity — the value is embedded in the token, not consumed from the stream. This means `--verbose=true` assigns `"true"` regardless of its arity setting — even `arity: 0`.
 
-When a schema is provided, any flag not defined in the schema is considered unknown.
-Unknown flags are collected in `__` as raw strings — dashes, `=` values and all.
-The parser does not consume any following arguments for unknown flags.
+```sh
+brewer brew espresso --verbose=true
+```
+```typescript
+import argvex from "argvex"
+
+const schema = {
+  verbose: { arity: 0 },
+}
+const args = argvex({ schema })
+// args -> { _: [ "brewer", "brew", "espresso" ], __: [], verbose: [ "true" ] }
+```
+
+### Unknown Flags (`__`)
+
+When a schema is provided, any flag not defined in the schema is collected in `__` as raw strings — dashes, `=` values and all. The parser does not consume any following arguments for unknown flags.
+
+Without a schema, `__` is always empty — every flag is accepted and parsed normally.
 
 ```sh
 brewer brew espresso --verbose --output file.txt --format json -x
@@ -313,18 +342,44 @@ const args = argvex({ schema })
 // args -> { _: [ "brewer", "brew", "espresso", "json" ], __: [ "--format", "-x" ], verbose: [], output: [ "file.txt" ] }
 ```
 
-Without a schema, `__` is always empty — every flag is accepted and parsed normally.
-
-`__` is always present in the result as a `string[]`, even when empty. You can check for unknown flags with a simple length check:
+This gives you full control over how your CLI handles unknowns:
 
 ```typescript
+// Warn and continue
 if (args.__.length) {
-    console.error("Unknown flags:", args.__)
+    console.warn("Unknown flags:", args.__.join(", "))
+}
+
+// Fail hard
+if (args.__.length) {
+    console.error("Unknown flags:", args.__.join(", "))
     process.exit(1)
+}
+
+// Forward to another tool
+if (args.__.length) {
+    spawnSync("other-tool", args.__, { stdio: "inherit" })
 }
 ```
 
-### TypeScript
+Compare this to other parsers: minimist silently swallows unknowns into the result, mri terminates on them, and arg throws by default. argvex collects them separately so your app decides the policy.
+
+### Stop Early
+
+`stopEarly` stops flag parsing after the first positional argument. Everything after it goes straight to `_`.
+
+```typescript
+import argvex from "argvex"
+
+const args = argvex({
+    argv: ["--verbose", "build", "--target", "es2020"],
+    stopEarly: true
+})
+// args -> { _: [ "build", "--target", "es2020" ], verbose: [] }
+```
+
+TypeScript
+-----------
 
 argvex ships three public types for consumers who want full type coverage.
 
@@ -366,59 +421,95 @@ const brew = (args: Args) => {
 }
 ```
 
-### Examples of common patterns
+Common Patterns
+----------------
 
-`argvex` gives you raw parsed data — defaults, coercion, and validation are yours to define however you want.
+argvex gives you raw parsed data — defaults, coercion, and validation are yours to define.
 
-#### Case with required flags
+#### Boolean flags
 
-Sometimes you need to ensure certain flags are provided.
-You can check for their presence and throw an error if they're missing.
+Flags without values are present as empty arrays. Check presence, not truthiness.
 
 ```typescript
-import argvex from "argvex"
-
 const args = argvex()
 
-if (!args.temperature) {
-    throw new Error('You must provide "--temperature" flag first.')
+const verbose = args.verbose !== undefined
+const debug = !!args.debug
+```
+
+#### Required flags
+
+```typescript
+const args = argvex()
+
+if (!args.output) {
+    console.error("Missing required flag: --output")
+    process.exit(1)
 }
 ```
 
-#### Case with default values
-
-When optional flags aren't provided, you can set sensible defaults.
+#### Default values
 
 ```typescript
-import argvex from "argvex"
-
 const args = argvex()
 
-const milk = args.milk ?? "steamed"
+const milk = args.milk?.[0] ?? "steamed"
+const shots = Number(args.shots?.[0] ?? "2")
 ```
 
-#### Case with value coercion
-
-Since `argvex` returns all values as strings, you can convert them to the types you need.
+#### Value coercion
 
 ```typescript
-import argvex from "argvex"
-
 const args = argvex()
 
-const shots = args.shots?.map(Number) ?? []
+const ports = args.port?.map(Number) ?? []
+const tags = args.tag ?? []
 ```
 
-#### Case with error handling
+#### `--no-*` negation
 
-Wrap `argvex` calls in try-catch to handle parsing errors gracefully.
+Define it as a regular flag. No magic, no implicit boolean flip.
+
+```typescript
+const schema = {
+  color: { arity: 0 },
+  "no-color": { arity: 0 },
+}
+const args = argvex({ schema })
+
+const useColor = !args["no-color"]
+```
+
+#### Subcommand delegation
+
+Use `stopEarly` to grab the subcommand and forward the rest.
+
+```typescript
+const args = argvex({
+    argv: ["--verbose", "build", "--target", "es2020", "--minify"],
+    stopEarly: true,
+})
+// args -> { _: [ "build", "--target", "es2020", "--minify" ], verbose: [] }
+
+const [ subcommand, ...rest ] = args._
+
+if (subcommand === "build") {
+    const buildArgs = argvex({
+        argv: rest,
+        schema: { target: { arity: 1 }, minify: { arity: 0 } },
+    })
+    // buildArgs -> { _: [], __: [], target: [ "es2020" ], minify: [] }
+}
+```
+
+#### Error handling
 
 ```typescript
 import argvex, { ParseError } from "argvex"
 
 try {
     const args = argvex()
-    // todo: process args here
+    // process args
 } catch (error) {
     if (error instanceof ParseError) {
         console.error(error.code, error.argument)
