@@ -11,7 +11,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("collects all args as positionals when no flags are present", () => {
+            it("collects all arguments as positionals when no flags are present", () => {
                 const argv = "brewer make latte".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: ["brewer", "make", "latte"],
@@ -27,7 +27,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("consumes interleaved arg as flag value", () => {
+            it("consumes interleaved argument as flag value", () => {
                 const argv = "latte --decaf espresso".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: ["latte"],
@@ -78,7 +78,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("treats -N as a flag, not a number", () => {
+            it("treats `-N` as a flag, not a number", () => {
                 const argv = "--shots -5".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: [],
@@ -88,7 +88,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("treats --value after a flag as another flag", () => {
+            it("treats `--value` after a flag as another flag", () => {
                 const argv = "--name --blend".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: [],
@@ -149,7 +149,7 @@ describe("argvex", () => {
         })
 
         context("= syntax", () => {
-            it("assigns value with = on long flag", () => {
+            it("assigns value with `=` on long flag", () => {
                 const argv =
                     "brewer make --decaf --size=xl --shots=2 --milk=oat latte".split(
                         " "
@@ -164,7 +164,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("assigns value with = on short flag", () => {
+            it("assigns value with `=` on short flag", () => {
                 const argv = "brewer -s=xl".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: ["brewer"],
@@ -173,7 +173,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("assigns = value on last flag in a group", () => {
+            it("assigns `=` value on last flag in a group", () => {
                 const argv = "brewer -ab=xl".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: ["brewer"],
@@ -183,7 +183,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("treats empty value after = as empty string", () => {
+            it("treats empty value after `=` as empty string", () => {
                 const argv = "brewer -s=".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: ["brewer"],
@@ -192,7 +192,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("splits on first = only and preserves the rest", () => {
+            it("splits on first `=` only and preserves the rest", () => {
                 const argv = "--size=2xl=big".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: [],
@@ -201,7 +201,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("treats empty value after = on long flag as empty string", () => {
+            it("treats empty value after `=` on long flag as empty string", () => {
                 const argv = "--size=".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: [],
@@ -212,7 +212,7 @@ describe("argvex", () => {
         })
 
         context("-- delimiter", () => {
-            it("stops parsing flags after --", () => {
+            it("stops parsing flags after `--`", () => {
                 const argv =
                     "brewer make --milk oat -- latte --not-a-flag".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
@@ -226,7 +226,7 @@ describe("argvex", () => {
 
     context("with schema", () => {
         context("arity", () => {
-            it("consumes N args matching the flag arity", () => {
+            it("consumes N arguments matching the flag arity", () => {
                 const schema = {
                     version: { alias: "v", arity: 0 },
                     decaf: { alias: "d", arity: 0 },
@@ -249,7 +249,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("pushes next arg to positionals when flag has arity 0", () => {
+            it("pushes next argument to positionals when flag has arity 0", () => {
                 const schema = {
                     decaf: { alias: "d", arity: 0 },
                     size: { alias: "s", arity: 1 }
@@ -264,8 +264,9 @@ describe("argvex", () => {
 
             it("resets arity budget on each flag occurrence (arity 1)", () => {
                 const schema = { roast: { arity: 1 } }
-                const argv =
-                    "--roast light --roast medium --roast dark".split(" ")
+                const argv = "--roast light --roast medium --roast dark".split(
+                    " "
+                )
                 expect(argvex({ argv, schema })).toStrictEqual({
                     _: [],
                     __: [],
@@ -284,7 +285,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("sends excess args to positionals after arity is exhausted", () => {
+            it("sends excess arguments to positionals after arity is exhausted", () => {
                 const schema = { milk: { arity: 1 } }
                 const argv = "--milk steamed whole oat".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -296,8 +297,9 @@ describe("argvex", () => {
 
             it("stops consuming at next flag even with remaining budget", () => {
                 const schema = { roast: { arity: 2 } }
-                const argv =
-                    "--roast light --roast medium --roast dark".split(" ")
+                const argv = "--roast light --roast medium --roast dark".split(
+                    " "
+                )
                 expect(argvex({ argv, schema })).toStrictEqual({
                     _: [],
                     __: [],
@@ -316,9 +318,9 @@ describe("argvex", () => {
                 })
             })
 
-            it("returns empty values when flag with arity > 0 is last arg", () => {
+            it("returns empty values when flag with arity > 0 is last argument", () => {
                 const schema = { size: { arity: 1 } }
-                const argv = ["--size"]
+                const argv = "--size".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
                     _: [],
                     __: [],
@@ -348,7 +350,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("routes -N to __ when schema is present", () => {
+            it("routes `-N` to `__` when schema is present", () => {
                 const schema = { shots: { arity: 1 } }
                 const argv = "--shots -5".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -358,7 +360,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("routes flag-like arg to __ when flag has remaining arity", () => {
+            it("routes flag-like argument to `__` when flag has remaining arity", () => {
                 const schema = { name: { arity: 1 } }
                 const argv = "--name --unknown".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -368,7 +370,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("routes flag-like short arg to __ when flag has remaining arity", () => {
+            it("routes flag-like short argument to `__` when flag has remaining arity", () => {
                 const schema = { shots: { alias: "h", arity: 1 } }
                 const argv = "-h -5".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -402,12 +404,10 @@ describe("argvex", () => {
                     milk: ["oat", "almond", "cow"]
                 })
             })
-
-
         })
 
         context("flag groups", () => {
-            it("parses inline value after zero-arity flags", () => {
+            it("parses inline value after arity-0 flags", () => {
                 const schema = {
                     decaf: { alias: "d", arity: 0 },
                     size: { alias: "s", arity: 1 }
@@ -437,13 +437,13 @@ describe("argvex", () => {
                 })
             })
 
-            it("consumes remaining group chars as inline value when middle flag has arity > 0", () => {
+            it("consumes remaining group characters as inline value when middle flag has arity > 0", () => {
                 const schema = {
                     d: { arity: 0 },
                     s: { arity: 1 },
                     m: { arity: 0 }
                 }
-                const argv = ["-dsm"]
+                const argv = "-dsm".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
                     _: [],
                     __: [],
@@ -452,9 +452,9 @@ describe("argvex", () => {
                 })
             })
 
-            it("treats all leading flags as arity 0 when group ends with =", () => {
+            it("treats all leading flags as arity 0 when group ends with `=`", () => {
                 const schema = { d: { arity: 1 }, s: { arity: 1 } }
-                const argv = ["-ds=oat"]
+                const argv = "-ds=oat".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
                     _: [],
                     __: [],
@@ -463,7 +463,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("consumes first char as inline value when all chars have arity > 0", () => {
+            it("consumes first character as inline value when all characters have arity > 0", () => {
                 const schema = { d: { arity: 1 }, s: { arity: 1 } }
                 const argv = "-ds medium".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -473,7 +473,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("consumes remaining chars as inline value for duplicate chars with arity", () => {
+            it("consumes remaining characters as inline value for duplicate characters with arity", () => {
                 const schema = { s: { arity: 1 } }
                 const argv = "-sss medium".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -483,7 +483,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("treats last duplicate char with arity 0 normally", () => {
+            it("treats last duplicate character with arity 0 normally", () => {
                 const schema = { d: { arity: 0 } }
                 const argv = "-ddd latte".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -495,7 +495,7 @@ describe("argvex", () => {
         })
 
         context("= syntax", () => {
-            it("assigns = value with schema alias", () => {
+            it("assigns `=` value with schema alias", () => {
                 const schema = {
                     decaf: { alias: "d", arity: 0 },
                     size: { alias: "s", arity: 1 }
@@ -509,7 +509,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("accumulates values across long, =, short, and inline syntaxes", () => {
+            it("accumulates values across long, `=`, short, and inline syntaxes", () => {
                 const schema = { size: { alias: "s", arity: 1 } }
                 const argv = "--size xl --size=md -sxs".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -519,7 +519,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("preserves arity budget when mixing = and space syntax", () => {
+            it("preserves arity budget when mixing `=` and space syntax", () => {
                 const schema = { milk: { arity: 3 } }
                 const argv = "--milk=oat --milk steamed whole".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -529,7 +529,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("does not consume trailing positionals after = syntax", () => {
+            it("does not consume trailing positionals after `=` syntax", () => {
                 const schema = { milk: { arity: 3 } }
                 const argv = "--milk=oat latte".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -539,7 +539,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("preserves arity across repeated = syntax", () => {
+            it("preserves arity across repeated `=` syntax", () => {
                 const schema = { milk: { arity: 3 } }
                 const argv = "--milk=oat --milk=almond --milk=cow".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -549,7 +549,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("honors = assignment even when arity is 0", () => {
+            it("honors `=` assignment even when arity is 0", () => {
                 const schema = { decaf: { arity: 0 } }
                 const argv = "--decaf=true".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -559,9 +559,9 @@ describe("argvex", () => {
                 })
             })
 
-            it("honors = assignment on short flag even when arity is 0", () => {
+            it("honors `=` assignment on short flag even when arity is 0", () => {
                 const schema = { decaf: { alias: "d", arity: 0 } }
-                const argv = ["-d=true"]
+                const argv = "-d=true".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
                     _: [],
                     __: [],
@@ -571,7 +571,7 @@ describe("argvex", () => {
         })
 
         context("-- delimiter", () => {
-            it("stops parsing flags after --", () => {
+            it("stops parsing flags after `--`", () => {
                 const schema = { add: { arity: 1 }, roast: { arity: 1 } }
                 const argv = "--add oat -- --roast dark".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -581,7 +581,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("stops consuming when -- appears mid-arity", () => {
+            it("stops consuming when `--` appears mid-arity", () => {
                 const schema = { milk: { arity: 3 } }
                 const argv = "--milk oat -- almond".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -593,25 +593,17 @@ describe("argvex", () => {
         })
 
         context("unknown flags (__)", () => {
-            it("routes unknown long flag to __", () => {
+            it("routes unknown long flag to `__`", () => {
                 const schema = { size: { arity: 2 } }
-                expect(
-                    argvex({
-                        argv: "--size xl xs --unknown".split(" "),
-                        schema
-                    })
-                ).toStrictEqual({
+                const argv1 = "--size xl xs --unknown".split(" ")
+                expect(argvex({ argv: argv1, schema })).toStrictEqual({
                     _: [],
                     __: ["--unknown"],
                     size: ["xl", "xs"]
                 })
 
-                expect(
-                    argvex({
-                        argv: "--unknown --size xl xs".split(" "),
-                        schema
-                    })
-                ).toStrictEqual({
+                const argv2 = "--unknown --size xl xs".split(" ")
+                expect(argvex({ argv: argv2, schema })).toStrictEqual({
                     _: [],
                     __: ["--unknown"],
                     size: ["xl", "xs"]
@@ -620,20 +612,19 @@ describe("argvex", () => {
 
             it("interrupts arity consumption at unknown flag", () => {
                 const schema = { size: { arity: 2 } }
-                const result = argvex({
-                    argv: "--unknown oat --size xl --unknown medium".split(" "),
-                    schema
-                })
+                const argv = "--unknown oat --size xl --unknown medium".split(
+                    " "
+                )
+                const result = argvex({ argv, schema })
                 expect(result.size).toStrictEqual(["xl"])
                 expect(result.__).toStrictEqual(["--unknown", "--unknown"])
                 expect(result._).toStrictEqual(["oat", "medium"])
             })
 
-            it("pushes unknown long flag to __", () => {
-                const result = argvex({
-                    argv: ["--decaf", "--unknown"],
-                    schema: { decaf: { arity: 0 } }
-                })
+            it("pushes unknown long flag to `__`", () => {
+                const schema = { decaf: { arity: 0 } }
+                const argv = "--decaf --unknown".split(" ")
+                const result = argvex({ argv, schema })
                 expect(result).toStrictEqual({
                     _: [],
                     __: ["--unknown"],
@@ -641,33 +632,30 @@ describe("argvex", () => {
                 })
             })
 
-            it("pushes unknown long flag with = to __ verbatim", () => {
-                const result = argvex({
-                    argv: ["--unknown=foo"],
-                    schema: {}
-                })
+            it("pushes unknown long flag with `=` to `__` verbatim", () => {
+                const schema = {}
+                const argv = "--unknown=foo".split(" ")
+                const result = argvex({ argv, schema })
                 expect(result).toStrictEqual({
                     _: [],
                     __: ["--unknown=foo"]
                 })
             })
 
-            it("pushes unknown short flag to __", () => {
-                const result = argvex({
-                    argv: ["-x"],
-                    schema: {}
-                })
+            it("pushes unknown short flag to `__`", () => {
+                const schema = {}
+                const argv = "-x".split(" ")
+                const result = argvex({ argv, schema })
                 expect(result).toStrictEqual({
                     _: [],
                     __: ["-x"]
                 })
             })
 
-            it("pushes unknown short flag with = to __ verbatim", () => {
-                const result = argvex({
-                    argv: ["-x=val"],
-                    schema: {}
-                })
+            it("pushes unknown short flag with `=` to `__` verbatim", () => {
+                const schema = {}
+                const argv = "-x=val".split(" ")
+                const result = argvex({ argv, schema })
                 expect(result).toStrictEqual({
                     _: [],
                     __: ["-x=val"]
@@ -675,10 +663,9 @@ describe("argvex", () => {
             })
 
             it("splits known and unknown flags in a group", () => {
-                const result = argvex({
-                    argv: ["-dxm"],
-                    schema: { d: { arity: 0 }, m: { arity: 0 } }
-                })
+                const schema = { d: { arity: 0 }, m: { arity: 0 } }
+                const argv = "-dxm".split(" ")
+                const result = argvex({ argv, schema })
                 expect(result).toStrictEqual({
                     _: [],
                     __: ["-x"],
@@ -688,10 +675,9 @@ describe("argvex", () => {
             })
 
             it("does not consume values for unknown flags", () => {
-                const result = argvex({
-                    argv: "--unknown oat --roast dark".split(" "),
-                    schema: { roast: { arity: 1 } }
-                })
+                const schema = { roast: { arity: 1 } }
+                const argv = "--unknown oat --roast dark".split(" ")
+                const result = argvex({ argv, schema })
                 expect(result).toStrictEqual({
                     _: ["oat"],
                     __: ["--unknown"],
@@ -719,31 +705,29 @@ describe("argvex", () => {
                 })
             })
 
-            it("collects multiple unknown flags", () => {
-                const result = argvex({
-                    argv: ["--a", "--b", "--c"],
-                    schema: {}
-                })
+            it("collects multiple unknown flags into `__`", () => {
+                const schema = {}
+                const argv = "--a --b --c".split(" ")
+                const result = argvex({ argv, schema })
                 expect(result).toStrictEqual({
                     _: [],
                     __: ["--a", "--b", "--c"]
                 })
             })
 
-            it("rejects --__ at parse time", () => {
+            it("rejects `--__` at parse time", () => {
+                const argv = "--__".split(" ")
                 expectParseError(
-                    () => argvex({ argv: ["--__"] }),
+                    () => argvex({ argv }),
                     "RESERVED_NAME",
                     "--__"
                 )
             })
 
-            it("does not detect unknowns after stopEarly triggers", () => {
-                const result = argvex({
-                    argv: "--roast dark latte --unknown".split(" "),
-                    schema: { roast: { arity: 1 } },
-                    stopEarly: true
-                })
+            it("does not detect unknowns after `stopEarly` triggers", () => {
+                const schema = { roast: { arity: 1 } }
+                const argv = "--roast dark latte --unknown".split(" ")
+                const result = argvex({ argv, schema, stopEarly: true })
                 expect(result).toStrictEqual({
                     _: ["latte", "--unknown"],
                     __: [],
@@ -751,7 +735,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("types __ as string[]", () => {
+            it("types `__` as `string[]`", () => {
                 const schema = { decaf: { arity: 0 } } as const
                 const result = argvex({ argv: [], schema })
                 const unknowns: string[] = result.__
@@ -761,7 +745,7 @@ describe("argvex", () => {
     })
 
     context("stopEarly", () => {
-        it("collects everything as positional when first arg is positional", () => {
+        it("collects everything as positional when first argument is positional", () => {
             const argv = "latte --decaf oat".split(" ")
             expect(argvex({ argv, stopEarly: true })).toStrictEqual({
                 _: ["latte", "--decaf", "oat"],
@@ -780,7 +764,7 @@ describe("argvex", () => {
             })
         })
 
-        it("respects -- delimiter", () => {
+        it("respects `--` delimiter", () => {
             const schema = { decaf: { arity: 0 } }
             const argv = "--decaf -- latte --other".split(" ")
             expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
@@ -790,7 +774,7 @@ describe("argvex", () => {
             })
         })
 
-        it("does not trigger on args consumed by arity", () => {
+        it("does not trigger on arguments consumed by arity", () => {
             const schema = { milk: { arity: 3 } }
             const argv = "--milk oat almond cow cmd --other".split(" ")
             expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
@@ -814,7 +798,7 @@ describe("argvex", () => {
             })
         })
 
-        it("does not stop early when stopEarly is not set", () => {
+        it("does not stop early when `stopEarly` is not set", () => {
             const schema = { decaf: { arity: 0 } }
             const argv = "latte --decaf espresso".split(" ")
             expect(argvex({ argv, schema })).toStrictEqual({
@@ -824,7 +808,7 @@ describe("argvex", () => {
             })
         })
 
-        it("does not trigger on args consumed by schema-less infinite arity", () => {
+        it("does not trigger on arguments consumed by schema-less arity", () => {
             const argv = "--milk oat latte".split(" ")
             expect(argvex({ argv, stopEarly: true })).toStrictEqual({
                 _: [],
@@ -836,44 +820,41 @@ describe("argvex", () => {
 
     context("edge cases", () => {
         context("malformed input", () => {
-            it("throws INVALID_FORMAT for --= (missing name)", () => {
+            it("throws `INVALID_FORMAT` for `--=` (missing name)", () => {
+                const argv = "brewer --=2xl".split(" ")
                 expectParseError(
-                    () => argvex({ argv: "brewer --=2xl".split(" ") }),
+                    () => argvex({ argv }),
                     "INVALID_FORMAT",
                     "--=2xl"
                 )
             })
 
-            it("throws INVALID_FORMAT for bare - (missing name)", () => {
-                expectParseError(
-                    () => argvex({ argv: "brewer -".split(" ") }),
-                    "INVALID_FORMAT",
-                    "-"
-                )
+            it("throws `INVALID_FORMAT` for bare `-` (missing name)", () => {
+                const argv = "brewer -".split(" ")
+                expectParseError(() => argvex({ argv }), "INVALID_FORMAT", "-")
             })
 
-            it("throws INVALID_FORMAT for -= (missing name)", () => {
+            it("throws `INVALID_FORMAT` for `-=` (missing name)", () => {
+                const argv = "brewer -=xl".split(" ")
                 expectParseError(
-                    () => argvex({ argv: "brewer -=xl".split(" ") }),
+                    () => argvex({ argv }),
                     "INVALID_FORMAT",
                     "-=xl"
                 )
             })
 
-            it("throws INVALID_FORMAT for triple dash", () => {
+            it("throws `INVALID_FORMAT` for triple dash `---`", () => {
+                const argv = "---flag".split(" ")
                 expectParseError(
-                    () => argvex({ argv: ["---flag"] }),
+                    () => argvex({ argv }),
                     "INVALID_FORMAT",
                     "---flag"
                 )
             })
 
-            it("throws RESERVED_NAME for --_", () => {
-                expectParseError(
-                    () => argvex({ argv: "--_ value pos1".split(" ") }),
-                    "RESERVED_NAME",
-                    "--_"
-                )
+            it("throws `RESERVED_NAME` for `--_`", () => {
+                const argv = "--_ value pos1".split(" ")
+                expectParseError(() => argvex({ argv }), "RESERVED_NAME", "--_")
             })
         })
 
@@ -888,20 +869,18 @@ describe("argvex", () => {
                 })
             })
 
-            it("parses single-char long flag as a regular flag", () => {
-                const argv = ["--d"]
+            it("parses single-character long flag as a regular flag", () => {
+                const argv = "--d".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: [],
                     __: [],
                     d: []
                 })
             })
-
-
         })
 
         context("delimiter behavior", () => {
-            it("treats everything after -- as positional", () => {
+            it("treats everything after `--` as positional", () => {
                 const argv = "-- --decaf -s xl".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: ["--decaf", "-s", "xl"],
@@ -909,7 +888,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("treats second -- as literal positional", () => {
+            it("treats second `--` as literal positional", () => {
                 const argv = "-- latte -- espresso".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: ["latte", "--", "espresso"],
@@ -917,8 +896,8 @@ describe("argvex", () => {
                 })
             })
 
-            it("handles -- with nothing after it", () => {
-                const argv = ["--"]
+            it("handles `--` with nothing after it", () => {
+                const argv = "--".split(" ")
                 expect(argvex({ argv })).toStrictEqual({
                     _: [],
                     __: []
@@ -949,7 +928,7 @@ describe("argvex", () => {
 
     context("schema validation", () => {
         context("alias rules", () => {
-            it("throws INVALID_SCHEMA for multi-character alias", () => {
+            it("throws `INVALID_SCHEMA` for multi-character alias", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -961,7 +940,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for empty string alias", () => {
+            it("throws `INVALID_SCHEMA` for empty string alias", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -973,7 +952,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for duplicate alias across entries", () => {
+            it("throws `INVALID_SCHEMA` for duplicate alias across entries", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -988,7 +967,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA when alias collides with another flag name", () => {
+            it("throws `INVALID_SCHEMA` when alias collides with another flag name", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -1005,7 +984,7 @@ describe("argvex", () => {
                 ).not.toThrowError()
             })
 
-            it("throws INVALID_SCHEMA for alias _", () => {
+            it("throws `INVALID_SCHEMA` for alias `_`", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -1017,7 +996,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for alias -", () => {
+            it("throws `INVALID_SCHEMA` for alias `-`", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -1029,7 +1008,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for alias =", () => {
+            it("throws `INVALID_SCHEMA` for alias `=`", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -1043,7 +1022,7 @@ describe("argvex", () => {
         })
 
         context("arity rules", () => {
-            it("throws INVALID_SCHEMA for negative arity", () => {
+            it("throws `INVALID_SCHEMA` for negative arity", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -1061,7 +1040,7 @@ describe("argvex", () => {
                 ).not.toThrowError()
             })
 
-            it("throws INVALID_SCHEMA for arity NaN", () => {
+            it("throws `INVALID_SCHEMA` for arity `NaN`", () => {
                 expectParseError(
                     () =>
                         argvex({ argv: [], schema: { flag: { arity: NaN } } }),
@@ -1070,7 +1049,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for fractional arity", () => {
+            it("throws `INVALID_SCHEMA` for fractional arity", () => {
                 expectParseError(
                     () =>
                         argvex({ argv: [], schema: { flag: { arity: 1.5 } } }),
@@ -1079,7 +1058,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for Infinity arity", () => {
+            it("throws `INVALID_SCHEMA` for `Infinity` arity", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -1093,7 +1072,7 @@ describe("argvex", () => {
         })
 
         context("reserved names", () => {
-            it("throws INVALID_SCHEMA for schema key _", () => {
+            it("throws `INVALID_SCHEMA` for schema key `_`", () => {
                 expectParseError(
                     () => argvex({ argv: [], schema: { _: { arity: 1 } } }),
                     "INVALID_SCHEMA",
@@ -1101,7 +1080,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for schema key __", () => {
+            it("throws `INVALID_SCHEMA` for schema key `__`", () => {
                 expectParseError(
                     () => argvex({ argv: [], schema: { __: { arity: 0 } } }),
                     "INVALID_SCHEMA",
@@ -1111,7 +1090,7 @@ describe("argvex", () => {
         })
 
         context("invalid keys", () => {
-            it("throws INVALID_SCHEMA for empty string key", () => {
+            it("throws `INVALID_SCHEMA` for empty string key", () => {
                 expectParseError(
                     () => argvex({ argv: [], schema: { "": { arity: 1 } } }),
                     "INVALID_SCHEMA",
@@ -1119,7 +1098,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for key containing =", () => {
+            it("throws `INVALID_SCHEMA` for key containing `=`", () => {
                 expectParseError(
                     () =>
                         argvex({
@@ -1131,7 +1110,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws INVALID_SCHEMA for key starting with -", () => {
+            it("throws `INVALID_SCHEMA` for key starting with `-`", () => {
                 expectParseError(
                     () => argvex({ argv: [], schema: { "-flag": {} } }),
                     "INVALID_SCHEMA",
@@ -1157,15 +1136,13 @@ describe("argvex", () => {
     })
 
     context("type inference", () => {
-        it("has typed keys with literal schema", () => {
+        it("has typed keys with `as const` schema", () => {
             const schema = {
                 decaf: { arity: 0 },
                 size: { arity: 1 }
             } as const
-            const result = argvex({
-                argv: "--decaf --size xl".split(" "),
-                schema
-            })
+            const argv = "--decaf --size xl".split(" ")
+            const result = argvex({ argv, schema })
             const v: string[] | undefined = result.decaf
             const s: string[] | undefined = result.size
             const u: string[] = result.__
@@ -1176,8 +1153,9 @@ describe("argvex", () => {
             result.anything
         })
 
-        it("has index signature without schema", () => {
-            const result = argvex({ argv: "--roast dark".split(" ") })
+        it("has index signature when no schema is provided", () => {
+            const argv = "--roast dark".split(" ")
+            const result = argvex({ argv })
             const val: string[] | undefined = result.roast
             expect(val).toStrictEqual(["dark"])
         })
@@ -1185,9 +1163,10 @@ describe("argvex", () => {
 })
 
 describe("ParseError", () => {
-    it("has name 'ParseError' and toString starts with it", () => {
+    it("has `name` 'ParseError' and `toString` starts with it", () => {
+        const argv = "--_".split(" ")
         try {
-            argvex({ argv: ["--_"] })
+            argvex({ argv })
             expect.unreachable("should have thrown")
         } catch (error) {
             expect(error).toBeInstanceOf(ParseError)
