@@ -264,7 +264,8 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
                     '"__" is used for unknown flags'
                 )
             }
-            if (hasSchema && !definitions.has(name)) {
+            const defForLong = definitions.get(name)
+            if (hasSchema && (defForLong == null || defForLong.name !== name)) {
                 __.push(arg)
                 current = null
                 continue
@@ -272,7 +273,7 @@ const argvex = <TSchema extends ArgvexSchema | undefined = undefined>(
             const { definition, values, arity } = longflag(
                 name,
                 value,
-                definitions.get(name)
+                defForLong
             )
             setFlag(definition.name, values, arity)
             continue

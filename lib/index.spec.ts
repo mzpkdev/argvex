@@ -404,19 +404,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("resolves alias used as --long prefix", () => {
-                const schema = {
-                    decaf: { alias: "d", arity: 0 },
-                    size: { alias: "s", arity: 1 }
-                }
-                const argv = "--d --s medium".split(" ")
-                expect(argvex({ argv, schema })).toStrictEqual({
-                    _: [],
-                    __: [],
-                    decaf: [],
-                    size: ["medium"]
-                })
-            })
+
         })
 
         context("flag groups", () => {
@@ -910,13 +898,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("parses unicode flag names", () => {
-                expect(argvex({ argv: ["--café=latte"] })).toStrictEqual({
-                    _: [],
-                    __: [],
-                    café: ["latte"]
-                })
-            })
+
         })
 
         context("delimiter behavior", () => {

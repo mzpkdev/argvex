@@ -225,8 +225,6 @@ const args = argvex({ schema })
 // args -> { _: [ "brewer", "brew", "mocha" ], "decaf": [], milk: [ "oat" ], chocolate: [ "dark" ] }
 ```
 
-Single-character long flags resolve through aliases — `--d` is equivalent to `-d` when `d` is defined as an alias in the schema. Both resolve to the canonical flag name.
-
 `alias` accepts exactly one character. Multiple aliases per flag are not supported.
 
 ### POSIX-flavoured
