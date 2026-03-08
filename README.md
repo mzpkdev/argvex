@@ -12,7 +12,7 @@
 <p align="center">
   <img src="./.github/assets/main-banner.gif" height="160" align="center" />
   <p align="center">
-    <strong>argvex</strong> is a lightweight and unopinionated CLI argument parser <br>  
+    <strong>argvex</strong> is a lightweight and unopinionated CLI argument parser <br>
       — just a parsing tool, not a framework
     <br />
     <br />
@@ -39,8 +39,7 @@ Table of Contents
   * [Aliases](#aliases)
   * [POSIX-flavoured](#posix-flavoured)
   * [Repeating flags](#repeating-flags)
-  * [Strict Mode](#strict-mode)
-  * [Permissive Mode](#permissive-mode)
+  * [Unknown Flags](#unknown-flags)
   * [TypeScript](#typescript)
 * [Examples of common patterns](#examples-of-common-patterns)
   * [Case with required flags](#case-with-required-flags)
@@ -53,10 +52,10 @@ Overview
 
 ### Why argvex?
 
-You want to roll-your-own CLI, but argument parsing is such a headache?  
-Let `argvex` handle the annoying part, and nothing else.  
+You want to roll-your-own CLI, but argument parsing is such a headache?
+Let `argvex` handle the annoying part, and nothing else.
 
-`argvex` is a minimalist argument parser that stays out of your way with little to no API, 
+`argvex` is a minimalist argument parser that stays out of your way with little to no API,
 so you can keep full control, define your own rules, and avoid framework baggage.
 
 ### Key Features
@@ -90,14 +89,14 @@ so you can keep full control, define your own rules, and avoid framework baggage
       <td>Type definitions right out of the box.</td>
     </tr>
   </tbody>
-</table>     
+</table>
 
 </div>
 
 Getting started
 ----------------
 
-`argvex` gives you a structured view of your command-line input — flags, values, 
+`argvex` gives you a structured view of your command-line input — flags, values,
 and operands — without forcing schemas, coercion, or assumptions.
 
 ### How to install
@@ -296,35 +295,15 @@ const args = argvex({ schema })
 // args -> { _: [ "brewer", "brew", "flat-white" ], milk: [ "steamed", "foamed", "microfoam" ] }
 ```
 
-If you want last-write-wins behavior instead, enable override mode.
+### Unknown Flags
 
-```typescript
-const args = argvex({ schema, override: true })
-// args -> { _: [ "brewer", "brew", "flat-white" ], milk: [ "microfoam" ] }
-```
-
-### Strict Mode
-
-You may force `argvex` to throw an error whenever an unknown flag is passed.
+When a schema is provided, any flag not defined in the schema is considered unknown.
+Unknown flags are collected in `__` as raw strings — dashes, `=` values and all.
+The parser does not consume any following arguments for unknown flags.
 
 ```sh
-brewer brew cortado --size small --shots 1 --no-pay
+brewer brew espresso --verbose --output file.txt --format json -x
 ```
-```typescript
-import argvex from "argvex"
-
-const schema = {
-  size: { arity: 1 },
-  shots: { arity: 1 },
-}
-const args = argvex({ schema, strict: true })
-// args -> ParseError
-```
-
-### Permissive Mode
-
-When you want strict typing but need to forward unknown flags (e.g. to a child process), use `permissive` with `strict`. Unknown flags are collected in `_` instead of throwing.
-
 ```typescript
 import argvex from "argvex"
 
@@ -332,12 +311,20 @@ const schema = {
   verbose: { arity: 0 },
   output: { arity: 1 },
 }
-const args = argvex({ schema, strict: true, permissive: true })
-// argv: --verbose --output file.txt --format json -x
-// args -> { verbose: [], output: ["file.txt"], _: ["--format", "json", "-x"] }
+const args = argvex({ schema })
+// args -> { _: [ "brewer", "brew", "espresso", "json" ], __: [ "--format", "-x" ], verbose: [], output: [ "file.txt" ] }
 ```
 
-Unknown flags preserve their raw form in `_` — including dashes and inline `=` values. Without `strict`, `permissive` has no effect.
+Without a schema, `__` is always empty — every flag is accepted and parsed normally.
+
+`__` is always present in the result as a `string[]`, even when empty. You can check for unknown flags with a simple length check:
+
+```typescript
+if (args.__.length) {
+    console.error("Unknown flags:", args.__)
+    process.exit(1)
+}
+```
 
 ### TypeScript
 
@@ -364,7 +351,7 @@ const schema: ArgvexSchema = {
 const args = argvex({ schema })
 ```
 
-**`InferArgvex<TSchema, TStrict?>`** — infers the result type from a schema. Use `typeof schema` to thread the literal type through:
+**`InferArgvex<TSchema>`** — infers the result type from a schema. Use `typeof schema` to thread the literal type through:
 
 ```typescript
 const schema = {
@@ -373,19 +360,12 @@ const schema = {
 } satisfies ArgvexSchema
 
 type Args = InferArgvex<typeof schema>
-// { _: string[]; size?: string[]; shots?: string[]; [flag: string]: string[] | undefined }
+// { _: string[]; __: string[]; size?: string[]; shots?: string[] }
 
 const brew = (args: Args) => {
   const size = args.size?.[0] ?? "medium"
   // ...
 }
-```
-
-Pass `true` as the second argument to get the strict variant — no index signature, unknown keys are type errors:
-
-```typescript
-type StrictArgs = InferArgvex<typeof schema, true>
-// { _: string[]; size?: string[]; shots?: string[] }
 ```
 
 ### Examples of common patterns
@@ -394,7 +374,7 @@ type StrictArgs = InferArgvex<typeof schema, true>
 
 #### Case with required flags
 
-Sometimes you need to ensure certain flags are provided. 
+Sometimes you need to ensure certain flags are provided.
 You can check for their presence and throw an error if they're missing.
 
 ```typescript
@@ -439,30 +419,28 @@ Wrap `argvex` calls in try-catch to handle parsing errors gracefully.
 import argvex, { ParseError } from "argvex"
 
 try {
-    const args = argvex({ strict: true })
+    const args = argvex()
     // todo: process args here
 } catch (error) {
     if (error instanceof ParseError) {
-        console.error(error.code, error.argument, error.known)
+        console.error(error.code, error.argument)
         process.exit(1)
     }
     throw error
 }
 ```
 
-`ParseError` exposes three structured properties alongside the human-readable `.message`:
+`ParseError` exposes two structured properties alongside the human-readable `.message`:
 
 | Property | Type | Description |
 |---|---|---|
 | `.code` | `ParseErrorCode` | Machine-readable error code (see below) |
 | `.argument` | `string` | The bare flag or schema key that caused the error (no dash prefix) |
-| `.known` | `string[]` | Known flag names — populated only for `UNKNOWN_FLAG`, otherwise `[]` |
 
 **Error codes:**
 
-| Code | Thrown when | `.known` |
-|---|---|---|
-| `UNKNOWN_FLAG` | An unrecognized flag is passed in strict mode | All schema flag names |
-| `INVALID_FORMAT` | A malformed argument is encountered (e.g. `---triple-dash`) | `[]` |
-| `INVALID_SCHEMA` | A schema definition is invalid (bad alias, reserved name, etc.) | `[]` |
-| `RESERVED_NAME` | A flag named `_` is passed (conflicts with the positionals key) | `[]` |
+| Code | Thrown when |
+|---|---|
+| `INVALID_FORMAT` | A malformed argument is encountered (e.g. `---triple-dash`) |
+| `INVALID_SCHEMA` | A schema definition is invalid (bad alias, reserved name, etc.) |
+| `RESERVED_NAME` | A flag named `_` or `__` is passed (conflicts with reserved keys) |
