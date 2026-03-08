@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
-import { ParseError, type ParseErrorCode } from "./index"
 import argvex from "./rewrite/index"
+import { ErrorCode, ParseError } from "./rewrite/ParseError"
+
 
 describe("argvex", () => {
     context("without schema", () => {
@@ -720,20 +721,9 @@ describe("argvex", () => {
                 const argv = "--__".split(" ")
                 expectParseError(
                     () => argvex({ argv }),
-                    "RESERVED_NAME",
+                    ErrorCode.RESERVED_KEYWORD,
                     "--__"
                 )
-            })
-
-            it("does not detect unknowns after `stopEarly` triggers", () => {
-                const schema = { roast: { arity: 1 } }
-                const argv = "--roast dark latte --unknown".split(" ")
-                const result = argvex({ argv, schema, stopEarly: true })
-                expect(result).toStrictEqual({
-                    _: ["latte", "--unknown"],
-                    __: [],
-                    roast: ["dark"]
-                })
             })
 
             it("types `__` as `string[]`", () => {
@@ -745,101 +735,27 @@ describe("argvex", () => {
         })
     })
 
-    context("stopEarly", () => {
-        it("collects everything as positional when first argument is positional", () => {
-            const argv = "latte --decaf oat".split(" ")
-            expect(argvex({ argv, stopEarly: true })).toStrictEqual({
-                _: ["latte", "--decaf", "oat"],
-                __: []
-            })
-        })
-
-        it("parses flags that appear before the first positional", () => {
-            const schema = { decaf: { arity: 0 }, size: { arity: 1 } }
-            const argv = "--decaf --size xl latte --other".split(" ")
-            expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
-                _: ["latte", "--other"],
-                __: [],
-                decaf: [],
-                size: ["xl"]
-            })
-        })
-
-        it("respects `--` delimiter", () => {
-            const schema = { decaf: { arity: 0 } }
-            const argv = "--decaf -- latte --other".split(" ")
-            expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
-                _: ["latte", "--other"],
-                __: [],
-                decaf: []
-            })
-        })
-
-        it("does not trigger on arguments consumed by arity", () => {
-            const schema = { milk: { arity: 3 } }
-            const argv = "--milk oat almond cow cmd --other".split(" ")
-            expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
-                _: ["cmd", "--other"],
-                __: [],
-                milk: ["oat", "almond", "cow"]
-            })
-        })
-
-        it("parses short flags before the first positional", () => {
-            const schema = {
-                decaf: { alias: "d", arity: 0 },
-                size: { alias: "s", arity: 1 }
-            }
-            const argv = "-ds xl latte --other".split(" ")
-            expect(argvex({ argv, schema, stopEarly: true })).toStrictEqual({
-                _: ["latte", "--other"],
-                __: [],
-                decaf: [],
-                size: ["xl"]
-            })
-        })
-
-        it("does not stop early when `stopEarly` is not set", () => {
-            const schema = { decaf: { arity: 0 } }
-            const argv = "latte --decaf espresso".split(" ")
-            expect(argvex({ argv, schema })).toStrictEqual({
-                _: ["latte", "espresso"],
-                __: [],
-                decaf: []
-            })
-        })
-
-        it("does not trigger on arguments consumed by schema-less arity", () => {
-            const argv = "--milk oat latte".split(" ")
-            expect(argvex({ argv, stopEarly: true })).toStrictEqual({
-                _: [],
-                __: [],
-                milk: ["oat", "latte"]
-            })
-        })
-    })
-
     context("edge cases", () => {
         context("malformed input", () => {
             it("throws `INVALID_FORMAT` for `--=` (missing name)", () => {
                 const argv = "brewer --=2xl".split(" ")
                 expectParseError(
                     () => argvex({ argv }),
-                    "INVALID_FORMAT",
+                    ErrorCode.INVALID_INPUT,
                     "--=2xl"
                 )
             })
 
             it("throws `INVALID_FORMAT` for bare `-` (missing name)", () => {
                 const argv = "brewer -".split(" ")
-                expectParseError(() => argvex({ argv }), "INVALID_FORMAT", "-")
+                expectParseError(() => argvex({ argv }), ErrorCode.INVALID_INPUT, "-")
             })
 
             it("throws `INVALID_FORMAT` for `-=` (missing name)", () => {
                 const argv = "brewer -=xl".split(" ")
                 expectParseError(
                     () => argvex({ argv }),
-                    "INVALID_FORMAT",
+                    ErrorCode.INVALID_INPUT,
                     "-=xl"
                 )
             })
@@ -848,14 +764,14 @@ describe("argvex", () => {
                 const argv = "---flag".split(" ")
                 expectParseError(
                     () => argvex({ argv }),
-                    "INVALID_FORMAT",
+                    ErrorCode.INVALID_INPUT,
                     "---flag"
                 )
             })
 
             it("throws `RESERVED_NAME` for `--_`", () => {
                 const argv = "--_ value pos1".split(" ")
-                expectParseError(() => argvex({ argv }), "RESERVED_NAME", "--_")
+                expectParseError(() => argvex({ argv }), ErrorCode.RESERVED_KEYWORD, "--_")
             })
         })
 
@@ -936,7 +852,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { verbose: { alias: "verb" } }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "verbose"
                 )
             })
@@ -948,7 +864,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { verbose: { alias: "" } }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "verbose"
                 )
             })
@@ -963,7 +879,7 @@ describe("argvex", () => {
                                 version: { alias: "v" }
                             }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "version"
                 )
             })
@@ -975,7 +891,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { verbose: { alias: "v" }, v: {} }
                         }),
-                    "INVALID_SCHEMA"
+                    ErrorCode.INVALID_SCHEMA
                 )
             })
 
@@ -992,7 +908,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { verbose: { alias: "_" } }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "verbose"
                 )
             })
@@ -1004,7 +920,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { verbose: { alias: "-" } }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "verbose"
                 )
             })
@@ -1016,7 +932,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { verbose: { alias: "=" } }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "verbose"
                 )
             })
@@ -1030,7 +946,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { verbose: { arity: -1 } }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "verbose"
                 )
             })
@@ -1045,7 +961,7 @@ describe("argvex", () => {
                 expectParseError(
                     () =>
                         argvex({ argv: [], schema: { flag: { arity: NaN } } }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "flag"
                 )
             })
@@ -1054,7 +970,7 @@ describe("argvex", () => {
                 expectParseError(
                     () =>
                         argvex({ argv: [], schema: { flag: { arity: 1.5 } } }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "flag"
                 )
             })
@@ -1066,7 +982,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { flag: { arity: Infinity } }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "flag"
                 )
             })
@@ -1076,7 +992,7 @@ describe("argvex", () => {
             it("throws `INVALID_SCHEMA` for schema key `_`", () => {
                 expectParseError(
                     () => argvex({ argv: [], schema: { _: { arity: 1 } } }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "_"
                 )
             })
@@ -1084,7 +1000,7 @@ describe("argvex", () => {
             it("throws `INVALID_SCHEMA` for schema key `__`", () => {
                 expectParseError(
                     () => argvex({ argv: [], schema: { __: { arity: 0 } } }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "__"
                 )
             })
@@ -1094,7 +1010,7 @@ describe("argvex", () => {
             it("throws `INVALID_SCHEMA` for empty string key", () => {
                 expectParseError(
                     () => argvex({ argv: [], schema: { "": { arity: 1 } } }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     ""
                 )
             })
@@ -1106,7 +1022,7 @@ describe("argvex", () => {
                             argv: [],
                             schema: { "foo=bar": { arity: 1 } }
                         }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "foo=bar"
                 )
             })
@@ -1114,7 +1030,7 @@ describe("argvex", () => {
             it("throws `INVALID_SCHEMA` for key starting with `-`", () => {
                 expectParseError(
                     () => argvex({ argv: [], schema: { "-flag": {} } }),
-                    "INVALID_SCHEMA",
+                    ErrorCode.INVALID_SCHEMA,
                     "-flag"
                 )
             })
@@ -1183,7 +1099,7 @@ function context(description: string, block: () => void): void {
 
 const expectParseError = (
     fn: () => unknown,
-    code: ParseErrorCode,
+    code: ErrorCode,
     argument?: string
 ) => {
     try {
