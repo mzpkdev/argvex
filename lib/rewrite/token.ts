@@ -1,4 +1,5 @@
 import { ErrorCode, ParseError } from "./ParseError"
+import { RESERVED_KEYWORDS, VALID_FLAG_NAME_RE } from "./constants"
 
 
 export enum TokenType {
@@ -25,7 +26,7 @@ export const tokenize = (argv: string[]): Token[] => {
             continue
         }
         if (prefix == "--") {
-            if (!VALID_PROPERTY_NAME_RE.test(symbol)) {
+            if (!VALID_FLAG_NAME_RE.test(symbol)) {
                 throw new ParseError(ErrorCode.INVALID_INPUT, arg)
             }
             tokens.push({ type: TokenType.LONG_FLAG, raw: arg })
@@ -49,6 +50,3 @@ export const extract = (raw: string): [ string, string, string | null ] => {
     const [ symbol, value, ...values ] = raw.substring(prefix.length).split("=")
     return [ prefix, symbol, value != null ? [ value, ...values ].join("=") : null ]
 }
-
-const RESERVED_KEYWORDS = [ "_", "__" ]
-const VALID_PROPERTY_NAME_RE = /^[$_a-zA-Z][$_a-zA-Z0-9-]*$/
