@@ -736,39 +736,18 @@ describe("argvex", () => {
 
     context("edge cases", () => {
         context("malformed input", () => {
-            it("throws `INVALID_FORMAT` for `--=` (missing name)", () => {
-                const argv = "brewer --=2xl".split(" ")
+            it.each([
+                ["--=2xl", "brewer --=2xl"],
+                ["-", "brewer -"],
+                ["-=xl", "brewer -=xl"],
+                ["---flag", "---flag"],
+                ["----deep", "----deep"],
+                ["--=", "--="]
+            ])("throws INVALID_INPUT for `%s`", (token, input) => {
                 expectParseError(
-                    () => argvex({ argv }),
+                    () => argvex({ argv: input.split(" ") }),
                     ErrorCode.INVALID_INPUT,
-                    "--=2xl"
-                )
-            })
-
-            it("throws `INVALID_FORMAT` for bare `-` (missing name)", () => {
-                const argv = "brewer -".split(" ")
-                expectParseError(
-                    () => argvex({ argv }),
-                    ErrorCode.INVALID_INPUT,
-                    "-"
-                )
-            })
-
-            it("throws `INVALID_FORMAT` for `-=` (missing name)", () => {
-                const argv = "brewer -=xl".split(" ")
-                expectParseError(
-                    () => argvex({ argv }),
-                    ErrorCode.INVALID_INPUT,
-                    "-=xl"
-                )
-            })
-
-            it("throws `INVALID_FORMAT` for triple dash `---`", () => {
-                const argv = "---flag".split(" ")
-                expectParseError(
-                    () => argvex({ argv }),
-                    ErrorCode.INVALID_INPUT,
-                    "---flag"
+                    token
                 )
             })
 
@@ -830,21 +809,18 @@ describe("argvex", () => {
         })
 
         context("prototype pollution", () => {
-            it("parses constructor as flag name without crashing", () => {
-                const argv = "--constructor val".split(" ")
+            it.each([
+                "constructor",
+                "toString",
+                "__proto__",
+                "valueOf",
+                "hasOwnProperty"
+            ])("parses `%s` as flag name without crashing", (name) => {
+                const argv = [`--${name}`, "val"]
                 expect(argvex({ argv })).toEqual({
                     _: [],
                     __: [],
-                    constructor: ["val"]
-                })
-            })
-
-            it("parses toString as flag name without crashing", () => {
-                const argv = "--toString val".split(" ")
-                expect(argvex({ argv })).toEqual({
-                    _: [],
-                    __: [],
-                    toString: ["val"]
+                    [name]: ["val"]
                 })
             })
         })
@@ -908,36 +884,17 @@ describe("argvex", () => {
                 ).not.toThrowError()
             })
 
-            it("throws `INVALID_SCHEMA` for alias `_`", () => {
+            it.each([
+                "_",
+                "-",
+                "=",
+                " "
+            ])("throws INVALID_SCHEMA for alias `%s`", (alias) => {
                 expectParseError(
                     () =>
                         argvex({
                             argv: [],
-                            schema: { verbose: { alias: "_" } }
-                        }),
-                    ErrorCode.INVALID_SCHEMA,
-                    "verbose"
-                )
-            })
-
-            it("throws `INVALID_SCHEMA` for alias `-`", () => {
-                expectParseError(
-                    () =>
-                        argvex({
-                            argv: [],
-                            schema: { verbose: { alias: "-" } }
-                        }),
-                    ErrorCode.INVALID_SCHEMA,
-                    "verbose"
-                )
-            })
-
-            it("throws `INVALID_SCHEMA` for alias `=`", () => {
-                expectParseError(
-                    () =>
-                        argvex({
-                            argv: [],
-                            schema: { verbose: { alias: "=" } }
+                            schema: { verbose: { alias } }
                         }),
                     ErrorCode.INVALID_SCHEMA,
                     "verbose"
@@ -946,15 +903,20 @@ describe("argvex", () => {
         })
 
         context("arity rules", () => {
-            it("throws `INVALID_SCHEMA` for negative arity", () => {
+            it.each([
+                ["negative", -1],
+                ["NaN", NaN],
+                ["fractional", 1.5],
+                ["-Infinity", -Infinity]
+            ])("throws INVALID_SCHEMA for %s arity", (_label, arity) => {
                 expectParseError(
                     () =>
                         argvex({
                             argv: [],
-                            schema: { verbose: { arity: -1 } }
+                            schema: { flag: { arity } }
                         }),
                     ErrorCode.INVALID_SCHEMA,
-                    "verbose"
+                    "flag"
                 )
             })
 
@@ -962,24 +924,6 @@ describe("argvex", () => {
                 expect(() =>
                     argvex({ argv: [], schema: { verbose: { arity: 0 } } })
                 ).not.toThrowError()
-            })
-
-            it("throws `INVALID_SCHEMA` for arity `NaN`", () => {
-                expectParseError(
-                    () =>
-                        argvex({ argv: [], schema: { flag: { arity: NaN } } }),
-                    ErrorCode.INVALID_SCHEMA,
-                    "flag"
-                )
-            })
-
-            it("throws `INVALID_SCHEMA` for fractional arity", () => {
-                expectParseError(
-                    () =>
-                        argvex({ argv: [], schema: { flag: { arity: 1.5 } } }),
-                    ErrorCode.INVALID_SCHEMA,
-                    "flag"
-                )
             })
         })
 
@@ -1002,31 +946,20 @@ describe("argvex", () => {
         })
 
         context("invalid keys", () => {
-            it("throws `INVALID_SCHEMA` for empty string key", () => {
-                expectParseError(
-                    () => argvex({ argv: [], schema: { "": { arity: 1 } } }),
-                    ErrorCode.INVALID_SCHEMA,
-                    ""
-                )
-            })
-
-            it("throws `INVALID_SCHEMA` for key containing `=`", () => {
+            it.each([
+                ["empty string", ""],
+                ["containing =", "foo=bar"],
+                ["starting with -", "-flag"],
+                ["starting with --", "--double"]
+            ])("throws INVALID_SCHEMA for key %s", (_label, key) => {
                 expectParseError(
                     () =>
                         argvex({
                             argv: [],
-                            schema: { "foo=bar": { arity: 1 } }
+                            schema: { [key]: { arity: 1 } }
                         }),
                     ErrorCode.INVALID_SCHEMA,
-                    "foo=bar"
-                )
-            })
-
-            it("throws `INVALID_SCHEMA` for key starting with `-`", () => {
-                expectParseError(
-                    () => argvex({ argv: [], schema: { "-flag": {} } }),
-                    ErrorCode.INVALID_SCHEMA,
-                    "-flag"
+                    key
                 )
             })
         })
