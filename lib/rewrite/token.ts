@@ -16,18 +16,25 @@ export type Token = {
 export const tokenize = (argv: string[]): Token[] => {
     const tokens: Token[] = []
     for (const arg of argv) {
-        if (RESERVED_KEYWORDS.includes(arg)) {
+        const [ prefix, symbol ] = extract(arg)
+        if (RESERVED_KEYWORDS.includes(symbol)) {
             throw new ParseError(ErrorCode.RESERVED_KEYWORD, arg)
         }
         if (arg == "--") {
             tokens.push({ type: TokenType.DELIMITER, raw: arg })
             continue
         }
-        if (arg.startsWith("--")) {
+        if (prefix == "--") {
+            if (!VALID_PROPERTY_NAME_RE.test(symbol)) {
+                throw new ParseError(ErrorCode.INVALID_INPUT, arg)
+            }
             tokens.push({ type: TokenType.LONG_FLAG, raw: arg })
             continue
         }
-        if (arg.startsWith("-")) {
+        if (prefix == "-") {
+            if (symbol == "") {
+                throw new ParseError(ErrorCode.INVALID_INPUT, arg)
+            }
             tokens.push({ type: TokenType.SHORT_FLAG, raw: arg })
             continue
         }
@@ -36,4 +43,12 @@ export const tokenize = (argv: string[]): Token[] => {
     return tokens
 }
 
-const RESERVED_KEYWORDS = [ "--_", "--__", "-_", "-__" ]
+export const extract = (raw: string): [ string, string, string | null ] => {
+    const prefix = raw.startsWith("--")
+        ? "--" : raw.startsWith("-") ? "-" : ""
+    const [ symbol, value, ...values ] = raw.substring(prefix.length).split("=")
+    return [ prefix, symbol, value != null ? [ value, ...values ].join("=") : null ]
+}
+
+const RESERVED_KEYWORDS = [ "_", "__" ]
+const VALID_PROPERTY_NAME_RE = /^[$_a-zA-Z][$_a-zA-Z0-9-]*$/

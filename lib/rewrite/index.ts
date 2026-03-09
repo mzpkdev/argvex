@@ -1,5 +1,5 @@
 import { parse, Schema, validate } from "./schema"
-import { tokenize, TokenType } from "./token"
+import { extract, tokenize, TokenType } from "./token"
 
 
 export type Options = {
@@ -40,7 +40,7 @@ export default function argvex({ argv = process.argv.slice(2), schema }: Options
                 remaining--
                 break
             case TokenType.LONG_FLAG: {
-                const [ symbol, ...values ] = token.raw.substring(2).split("=")
+                const [ , symbol, value ] = extract(token.raw)
                 const flag = definitions.get(symbol)
                 if (flag == null) {
                     argvex.__.push(token.raw)
@@ -50,31 +50,31 @@ export default function argvex({ argv = process.argv.slice(2), schema }: Options
                 }
                 current = argvex[flag.name] ?? []
                 remaining = flag.arity ?? Infinity
-                if (values.length > 0) {
-                    current.push(values.join("="))
+                if (value != null) {
+                    current.push(value)
                     remaining = 0
                 }
                 argvex[flag.name] = current
                 break
             }
             case TokenType.SHORT_FLAG: {
-                const [ group, ...values ] = token.raw.substring(1).split("=")
+                const [ , group, value ] = extract(token.raw)
                 for (let j = 0; j < group.length; j++) {
                     const symbol = group[j]
                     const flag = definitions.get(symbol)
                     if (flag == null) {
-                        const assignment = j == group.length - 1 && values.length > 0 ? `=${values.join("=")}` : ""
+                        const assignment = j == group.length - 1 && value != null ? `=${value}` : ""
                         argvex.__.push(`-${symbol}${assignment}`)
                         continue
                     }
                     current = argvex[flag.name] ?? []
                     remaining = flag.arity ?? Infinity
-                    if (values.length > 0 && j == group.length - 1) {
-                        current.push(values.join("="))
+                    if (value != null && j == group.length - 1) {
+                        current.push(value)
                         argvex[flag.name] = current
                         break
                     }
-                    if (values.length == 0 && !schemaless && (flag.arity ?? 0) > 0) {
+                    if (value == null && !schemaless && (flag.arity ?? 0) > 0) {
                         const value = group.substring(j + 1)
                         if (value) {
                             current.push(value)
