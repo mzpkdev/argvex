@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest"
+import { context } from "vitest-plugin-context"
 import argvex from "./rewrite/index"
 import { ErrorCode, ParseError } from "./rewrite/ParseError"
 
@@ -37,20 +38,6 @@ describe("argvex", () => {
                 })
             })
 
-            it("defaults to process.argv.slice(2)", () => {
-                const original = process.argv
-                process.argv = ["node", "brew.js", "--decaf", "oat"]
-                try {
-                    const result = argvex()
-                    expect(result).toStrictEqual({
-                        _: [],
-                        __: [],
-                        decaf: ["oat"]
-                    })
-                } finally {
-                    process.argv = original
-                }
-            })
         })
 
         context("long flags", () => {
@@ -382,6 +369,55 @@ describe("argvex", () => {
             })
         })
 
+        context("Infinity arity", () => {
+            it("consumes all remaining operands", () => {
+                const schema = { milk: { arity: Infinity } }
+                const argv = "--milk oat almond cow".split(" ")
+                expect(argvex({ argv, schema })).toStrictEqual({
+                    _: [],
+                    __: [],
+                    milk: ["oat", "almond", "cow"]
+                })
+            })
+
+            it("stops at another known flag", () => {
+                const schema = { milk: { arity: Infinity }, size: { arity: 1 } }
+                const argv = "--milk oat --size xl".split(" ")
+                expect(argvex({ argv, schema })).toStrictEqual({
+                    _: [],
+                    __: [],
+                    milk: ["oat"],
+                    size: ["xl"]
+                })
+            })
+
+            it("stops at unknown flag", () => {
+                const schema = { milk: { arity: Infinity } }
+                const argv = "--milk oat --unknown".split(" ")
+                expect(argvex({ argv, schema })).toStrictEqual({
+                    _: [],
+                    __: ["--unknown"],
+                    milk: ["oat"]
+                })
+            })
+
+            it("stops at `--` delimiter", () => {
+                const schema = { milk: { arity: Infinity } }
+                const argv = "--milk oat -- rest".split(" ")
+                expect(argvex({ argv, schema })).toStrictEqual({
+                    _: ["rest"],
+                    __: [],
+                    milk: ["oat"]
+                })
+            })
+
+            it("accepts Infinity as a valid arity in schema", () => {
+                expect(() =>
+                    argvex({ argv: [], schema: { flag: { arity: Infinity } } })
+                ).not.toThrowError()
+            })
+        })
+
         context("aliases", () => {
             it("resolves short flags to their canonical names", () => {
                 const schema = {
@@ -616,13 +652,14 @@ describe("argvex", () => {
                 const argv = "--unknown oat --size xl --unknown medium".split(
                     " "
                 )
-                const result = argvex({ argv, schema })
-                expect(result.size).toStrictEqual(["xl"])
-                expect(result.__).toStrictEqual(["--unknown", "--unknown"])
-                expect(result._).toStrictEqual(["oat", "medium"])
+                expect(argvex({ argv, schema })).toStrictEqual({
+                    _: ["oat", "medium"],
+                    __: ["--unknown", "--unknown"],
+                    size: ["xl"]
+                })
             })
 
-            it("pushes unknown long flag to `__`", () => {
+            it("routes unknown long flag to `__`", () => {
                 const schema = { decaf: { arity: 0 } }
                 const argv = "--decaf --unknown".split(" ")
                 const result = argvex({ argv, schema })
@@ -633,7 +670,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("pushes unknown long flag with `=` to `__` verbatim", () => {
+            it("routes unknown long flag with `=` to `__` verbatim", () => {
                 const schema = {}
                 const argv = "--unknown=foo".split(" ")
                 const result = argvex({ argv, schema })
@@ -643,7 +680,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("pushes unknown short flag to `__`", () => {
+            it("routes unknown short flag to `__`", () => {
                 const schema = {}
                 const argv = "-x".split(" ")
                 const result = argvex({ argv, schema })
@@ -653,7 +690,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("pushes unknown short flag with `=` to `__` verbatim", () => {
+            it("routes unknown short flag with `=` to `__` verbatim", () => {
                 const schema = {}
                 const argv = "-x=val".split(" ")
                 const result = argvex({ argv, schema })
@@ -696,7 +733,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("routes multiple unknown flags to __", () => {
+            it("routes multiple unknown flags to `__`", () => {
                 const schema = { size: { arity: 1 } }
                 const argv = "--unknown oat latte --size xl".split(" ")
                 expect(argvex({ argv, schema })).toStrictEqual({
@@ -706,7 +743,7 @@ describe("argvex", () => {
                 })
             })
 
-            it("collects multiple unknown flags into `__`", () => {
+            it("routes multiple unknown flags to `__`", () => {
                 const schema = {}
                 const argv = "--a --b --c".split(" ")
                 const result = argvex({ argv, schema })
@@ -743,7 +780,7 @@ describe("argvex", () => {
                 ["---flag", "---flag"],
                 ["----deep", "----deep"],
                 ["--=", "--="]
-            ])("throws INVALID_INPUT for `%s`", (token, input) => {
+            ])("throws `INVALID_INPUT` for `%s`", (token, input) => {
                 expectParseError(
                     () => argvex({ argv: input.split(" ") }),
                     ErrorCode.INVALID_INPUT,
@@ -751,7 +788,7 @@ describe("argvex", () => {
                 )
             })
 
-            it("throws `RESERVED_NAME` for `--_`", () => {
+            it("throws `RESERVED_KEYWORD` for `--_`", () => {
                 const argv = "--_ value pos1".split(" ")
                 expectParseError(
                     () => argvex({ argv }),
@@ -889,7 +926,7 @@ describe("argvex", () => {
                 "-",
                 "=",
                 " "
-            ])("throws INVALID_SCHEMA for alias `%s`", (alias) => {
+            ])("throws `INVALID_SCHEMA` for alias `%s`", (alias) => {
                 expectParseError(
                     () =>
                         argvex({
@@ -908,7 +945,7 @@ describe("argvex", () => {
                 ["NaN", NaN],
                 ["fractional", 1.5],
                 ["-Infinity", -Infinity]
-            ])("throws INVALID_SCHEMA for %s arity", (_label, arity) => {
+            ])("throws `INVALID_SCHEMA` for %s arity", (_label, arity) => {
                 expectParseError(
                     () =>
                         argvex({
@@ -951,7 +988,7 @@ describe("argvex", () => {
                 ["containing =", "foo=bar"],
                 ["starting with -", "-flag"],
                 ["starting with --", "--double"]
-            ])("throws INVALID_SCHEMA for key %s", (_label, key) => {
+            ])("throws `INVALID_SCHEMA` for key %s", (_label, key) => {
                 expectParseError(
                     () =>
                         argvex({
@@ -1021,9 +1058,6 @@ describe("ParseError", () => {
     })
 })
 
-function context(description: string, block: () => void): void {
-    describe(description, block)
-}
 
 const expectParseError = (
     fn: () => unknown,

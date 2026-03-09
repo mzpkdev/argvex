@@ -2,7 +2,9 @@
   "name": "argvex",
   "description": "Lightweight and unopinionated CLI argument parser — just a parsing tool, not a framework",
   "version": "0.1.1",
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "scripts": {
@@ -23,7 +25,8 @@
     "ts-patch": "^3.2.1",
     "typescript": "^5.5.4",
     "typescript-transform-paths": "^3.4.11",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "vitest-plugin-context": "^1.0.0"
   },
   "author": "Mateusz Pietrzak",
   "license": "MIT",
