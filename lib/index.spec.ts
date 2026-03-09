@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest"
 import argvex from "./rewrite/index"
 import { ErrorCode, ParseError } from "./rewrite/ParseError"
 
-
 describe("argvex", () => {
     context("without schema", () => {
         context("operands", () => {
@@ -748,7 +747,11 @@ describe("argvex", () => {
 
             it("throws `INVALID_FORMAT` for bare `-` (missing name)", () => {
                 const argv = "brewer -".split(" ")
-                expectParseError(() => argvex({ argv }), ErrorCode.INVALID_INPUT, "-")
+                expectParseError(
+                    () => argvex({ argv }),
+                    ErrorCode.INVALID_INPUT,
+                    "-"
+                )
             })
 
             it("throws `INVALID_FORMAT` for `-=` (missing name)", () => {
@@ -771,7 +774,11 @@ describe("argvex", () => {
 
             it("throws `RESERVED_NAME` for `--_`", () => {
                 const argv = "--_ value pos1".split(" ")
-                expectParseError(() => argvex({ argv }), ErrorCode.RESERVED_KEYWORD, "--_")
+                expectParseError(
+                    () => argvex({ argv }),
+                    ErrorCode.RESERVED_KEYWORD,
+                    "--_"
+                )
             })
         })
 
@@ -970,18 +977,6 @@ describe("argvex", () => {
                 expectParseError(
                     () =>
                         argvex({ argv: [], schema: { flag: { arity: 1.5 } } }),
-                    ErrorCode.INVALID_SCHEMA,
-                    "flag"
-                )
-            })
-
-            it("throws `INVALID_SCHEMA` for `Infinity` arity", () => {
-                expectParseError(
-                    () =>
-                        argvex({
-                            argv: [],
-                            schema: { flag: { arity: Infinity } }
-                        }),
                     ErrorCode.INVALID_SCHEMA,
                     "flag"
                 )

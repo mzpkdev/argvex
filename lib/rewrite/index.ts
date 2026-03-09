@@ -1,6 +1,5 @@
-import { parse, Schema, validate } from "./schema"
-import { extract, tokenize, TokenType } from "./token"
-
+import { parse, type Schema, validate } from "./schema"
+import { extract, TokenType, tokenize } from "./token"
 
 export type Options = {
     argv?: string[]
@@ -13,7 +12,10 @@ export type ArgvEx = {
     [flag: string]: string[]
 }
 
-export default function argvex({ argv = process.argv.slice(2), schema }: Options = {}): ArgvEx | never {
+export default function argvex({
+    argv = process.argv.slice(2),
+    schema
+}: Options = {}): ArgvEx | never {
     const schemaless = schema == null
     if (!schemaless) {
         validate(schema)
@@ -40,7 +42,7 @@ export default function argvex({ argv = process.argv.slice(2), schema }: Options
                 remaining--
                 break
             case TokenType.LONG_FLAG: {
-                const [ , symbol, value ] = extract(token.raw)
+                const [, symbol, value] = extract(token.raw)
                 const flag = definitions.get(symbol)
                 if (flag == null) {
                     argvex.__.push(token.raw)
@@ -58,12 +60,15 @@ export default function argvex({ argv = process.argv.slice(2), schema }: Options
                 break
             }
             case TokenType.SHORT_FLAG: {
-                const [ , group, value ] = extract(token.raw)
+                const [, group, value] = extract(token.raw)
                 for (let j = 0; j < group.length; j++) {
                     const symbol = group[j]
                     const flag = definitions.get(symbol)
                     if (flag == null) {
-                        const assignment = j == group.length - 1 && value != null ? `=${value}` : ""
+                        const assignment =
+                            j == group.length - 1 && value != null
+                                ? `=${value}`
+                                : ""
                         argvex.__.push(`-${symbol}${assignment}`)
                         continue
                     }
@@ -88,10 +93,7 @@ export default function argvex({ argv = process.argv.slice(2), schema }: Options
                 break
             }
             case TokenType.DELIMITER:
-                argvex._.push(
-                    ...tokens.slice(i + 1)
-                        .map(token => token.raw)
-                )
+                argvex._.push(...tokens.slice(i + 1).map((token) => token.raw))
                 break loop
         }
     }

@@ -1,6 +1,5 @@
-import { ErrorCode, ParseError } from "./ParseError"
 import { RESERVED_KEYWORDS, VALID_FLAG_NAME_RE } from "./constants"
-
+import { ErrorCode, ParseError } from "./ParseError"
 
 export enum TokenType {
     OPERAND,
@@ -17,7 +16,7 @@ export type Token = {
 export const tokenize = (argv: string[]): Token[] => {
     const tokens: Token[] = []
     for (const arg of argv) {
-        const [ prefix, symbol ] = extract(arg)
+        const [prefix, symbol] = extract(arg)
         if (RESERVED_KEYWORDS.includes(symbol)) {
             throw new ParseError(ErrorCode.RESERVED_KEYWORD, arg)
         }
@@ -44,9 +43,8 @@ export const tokenize = (argv: string[]): Token[] => {
     return tokens
 }
 
-export const extract = (raw: string): [ string, string, string | null ] => {
-    const prefix = raw.startsWith("--")
-        ? "--" : raw.startsWith("-") ? "-" : ""
-    const [ symbol, value, ...values ] = raw.substring(prefix.length).split("=")
-    return [ prefix, symbol, value != null ? [ value, ...values ].join("=") : null ]
+export const extract = (raw: string): [string, string, string | null] => {
+    const prefix = raw.startsWith("--") ? "--" : raw.startsWith("-") ? "-" : ""
+    const [symbol, value, ...values] = raw.substring(prefix.length).split("=")
+    return [prefix, symbol, value != null ? [value, ...values].join("=") : null]
 }

@@ -1,6 +1,9 @@
+import {
+    RESERVED_KEYWORDS,
+    VALID_FLAG_ALIAS_RE,
+    VALID_FLAG_NAME_RE
+} from "./constants"
 import { ErrorCode, ParseError } from "./ParseError"
-import { RESERVED_KEYWORDS, VALID_FLAG_ALIAS_RE, VALID_FLAG_NAME_RE } from "./constants"
-
 
 export type Schema = {
     [flag: string]: {
@@ -41,7 +44,10 @@ export const validate = (schema: Schema): void | never => {
         if (alias != null && !VALID_FLAG_ALIAS_RE.test(alias)) {
             throw new ParseError(ErrorCode.INVALID_SCHEMA, flag)
         }
-        if (RESERVED_KEYWORDS.includes(flag) || alias != null && RESERVED_KEYWORDS.includes(alias)) {
+        if (
+            RESERVED_KEYWORDS.includes(flag) ||
+            (alias != null && RESERVED_KEYWORDS.includes(alias))
+        ) {
             throw new ParseError(ErrorCode.INVALID_SCHEMA, flag)
         }
         if (symbols.has(flag)) {
@@ -50,7 +56,11 @@ export const validate = (schema: Schema): void | never => {
         if (alias && symbols.has(alias)) {
             throw new ParseError(ErrorCode.INVALID_SCHEMA, flag)
         }
-        if (arity != null && (!Number.isInteger(arity) || arity < 0)) {
+        if (
+            arity != null &&
+            arity != Infinity &&
+            (!Number.isInteger(arity) || arity < 0)
+        ) {
             throw new ParseError(ErrorCode.INVALID_SCHEMA, flag)
         }
         if (alias) {
@@ -58,10 +68,11 @@ export const validate = (schema: Schema): void | never => {
             symbols.add(alias)
         }
     }
-
 }
 
-export const parse = (schema?: Schema): Map<string, { name: string } & Schema[string]> => {
+export const parse = (
+    schema?: Schema
+): Map<string, { name: string } & Schema[string]> => {
     if (schema == null) {
         const proxy = new Map()
         proxy.get = (symbol: string) => {

@@ -13,7 +13,8 @@
         "rules": {
             "suspicious": {
                 "noExplicitAny": "off",
-                "noConfusingVoidType": "off"
+                "noConfusingVoidType": "off",
+                "noDoubleEquals": "off"
             }
         }
     },
