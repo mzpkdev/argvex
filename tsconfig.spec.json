@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["**/*.spec.ts", "**/*.test.ts", "lib/vitest.d.ts", "lib/setup.ts"],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noUnusedLocals": false
+  }
+}

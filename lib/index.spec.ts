@@ -1,7 +1,5 @@
-import { describe, expect, it } from "vitest"
-import { context } from "vitest-plugin-context"
-import argvex from "./rewrite/index"
-import { ErrorCode, ParseError } from "./rewrite/ParseError"
+import argvex from "./index"
+import { ErrorCode, ParseError } from "./ParseError"
 
 describe("argvex", () => {
     context("without schema", () => {
@@ -37,7 +35,6 @@ describe("argvex", () => {
                     decaf: ["espresso"]
                 })
             })
-
         })
 
         context("long flags", () => {
@@ -1031,7 +1028,6 @@ describe("argvex", () => {
             expect(v).toStrictEqual([])
             expect(s).toStrictEqual(["xl"])
             expect(u).toStrictEqual([])
-            // @ts-expect-error -- unknown keys should be a type error with literal schema
             result.anything
         })
 
@@ -1057,7 +1053,6 @@ describe("ParseError", () => {
         }
     })
 })
-
 
 const expectParseError = (
     fn: () => unknown,

@@ -25,8 +25,7 @@
     "ts-patch": "^3.2.1",
     "typescript": "^5.5.4",
     "typescript-transform-paths": "^3.4.11",
-    "vitest": "^3.2.4",
-    "vitest-plugin-context": "^1.0.0"
+    "vitest": "^3.2.4"
   },
   "author": "Mateusz Pietrzak",
   "license": "MIT",

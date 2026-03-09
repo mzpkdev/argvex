@@ -16,6 +16,9 @@
     "lib": [
       "es2024"
     ],
+    "types": [
+      "vitest/globals"
+    ],
     "paths": {
       "@/*": [
         "./lib/*"
