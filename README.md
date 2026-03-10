@@ -42,7 +42,6 @@ Table of Contents
   * [Aliases](#aliases)
   * [Arity](#arity)
   * [Unknown Flags (`__`)](#unknown-flags-__)
-  * [Stop Early](#stop-early)
 * [TypeScript](#typescript)
 * [Common Patterns](#common-patterns)
   * [Boolean flags](#boolean-flags)
@@ -50,7 +49,6 @@ Table of Contents
   * [Default values](#default-values)
   * [Value coercion](#value-coercion)
   * [`--no-*` negation](#--no--negation)
-  * [Subcommand delegation](#subcommand-delegation)
   * [Error handling](#error-handling)
 
 Why argvex?
@@ -162,12 +160,12 @@ brewer brew espresso --size medium --shots 3 --milk none
 import argvex from "argvex"
 
 const args = argvex()
-// args -> { _: [ "brewer", "brew", "espresso" ], size: [ "medium" ], shots: [ "3" ], milk: [ "none" ] }
+// args -> { _: [ "brewer", "brew", "espresso" ], __: [], size: [ "medium" ], shots: [ "3" ], milk: [ "none" ] }
 ```
 
 `_` is the positionals array — commands, subcommands, file paths, bare words, and everything after `--`.
 
-**Note:** Without a schema, every flag consumes all following arguments until the next flag or `--` is encountered. This means `--output file.txt input.txt` will assign both `file.txt` and `input.txt` to the `output` flag, not treat `input.txt` as a positional. To control this, use a schema with `arity` — see [Arity](#arity).
+**Note:** Without a schema, every flag greedily consumes all following tokens until the next flag-like token (anything starting with `-`) or `--` is encountered. This means `--output file.txt input.txt` will assign both `file.txt` and `input.txt` to the `output` flag, not treat `input.txt` as a positional. To control this, use a schema with `arity` — see [Arity](#arity).
 
 ### Short Flags & Groups
 
@@ -180,7 +178,7 @@ brewer brew americano -qs -m water -t 85
 import argvex from "argvex"
 
 const args = argvex()
-// args -> { _: [ "brewer", "brew", "americano" ], q: [], s: [], m: [ "water" ], t: [ "85" ] }
+// args -> { _: [ "brewer", "brew", "americano" ], __: [], q: [], s: [], m: [ "water" ], t: [ "85" ] }
 ```
 
 ### Value Assignment with `=`
@@ -194,7 +192,7 @@ brewer brew latte --size=large -m=oat
 import argvex from "argvex"
 
 const args = argvex()
-// args -> { _: [ "brewer", "brew", "latte" ], size: [ "large" ], m: [ "oat" ] }
+// args -> { _: [ "brewer", "brew", "latte" ], __: [], size: [ "large" ], m: [ "oat" ] }
 ```
 
 This works with grouped flags too — the value is assigned to the last flag in the group.
@@ -206,7 +204,7 @@ brewer brew latte -ds=medium
 import argvex from "argvex"
 
 const args = argvex()
-// args -> { _: [ "brewer", "brew", "latte" ], d: [], s: [ "medium" ] }
+// args -> { _: [ "brewer", "brew", "latte" ], __: [], d: [], s: [ "medium" ] }
 ```
 
 ### End-of-Options `--`
@@ -220,7 +218,7 @@ brewer brew --milk oat -- --not-a-flag latte
 import argvex from "argvex"
 
 const args = argvex()
-// args -> { _: [ "brewer", "brew", "--not-a-flag", "latte" ], milk: [ "oat" ] }
+// args -> { _: [ "brewer", "brew", "--not-a-flag", "latte" ], __: [], milk: [ "oat" ] }
 ```
 
 ### Custom argv
@@ -231,7 +229,7 @@ By default `argvex` reads from `process.argv.slice(2)`. Pass `argv` to parse any
 import argvex from "argvex"
 
 const args = argvex({ argv: ["--size", "large", "--shots", "2"] })
-// args -> { _: [], size: [ "large" ], shots: [ "2" ] }
+// args -> { _: [], __: [], size: [ "large" ], shots: [ "2" ] }
 ```
 
 Schema
@@ -364,39 +362,21 @@ if (args.__.length) {
 
 Compare this to other parsers: minimist silently swallows unknowns into the result, mri terminates on them, and arg throws by default. argvex collects them separately so your app decides the policy.
 
-### Stop Early
-
-`stopEarly` stops flag parsing after the first positional argument. Everything after it goes straight to `_`.
-
-```typescript
-import argvex from "argvex"
-
-const args = argvex({
-    argv: ["--verbose", "build", "--target", "es2020"],
-    stopEarly: true
-})
-// args -> { _: [ "build", "--target", "es2020" ], verbose: [] }
-```
-
 TypeScript
 -----------
 
-argvex ships three public types for consumers who want full type coverage.
+argvex exports the following public types:
 
 ```typescript
-import argvex, { FlagDef, ArgvexSchema, InferArgvex } from "argvex"
+import argvex, { Schema, Options, ArgvEx, ParseError, ErrorCode } from "argvex"
 ```
 
-**`FlagDef`** — the shape of a single flag definition:
+**`Schema`** — the shape of a schema definition. Use this to annotate a schema defined outside the `argvex()` call:
 
 ```typescript
-const flag: FlagDef = { alias: "s", arity: 1 }
-```
+import argvex, { Schema } from "argvex"
 
-**`ArgvexSchema`** — use this to annotate a schema defined outside the `argvex()` call:
-
-```typescript
-const schema: ArgvexSchema = {
+const schema: Schema = {
   size: { alias: "s", arity: 1 },
   shots: { alias: "h", arity: 1 },
   decaf: { alias: "d", arity: 0 },
@@ -404,22 +384,27 @@ const schema: ArgvexSchema = {
 const args = argvex({ schema })
 ```
 
-**`InferArgvex<TSchema>`** — infers the result type from a schema. Use `typeof schema` to thread the literal type through:
+**`Options`** — the input shape passed to `argvex()`:
 
 ```typescript
-const schema = {
-  size: { alias: "s", arity: 1 },
-  shots: { alias: "h", arity: 1 },
-} satisfies ArgvexSchema
+import argvex, { Options } from "argvex"
 
-type Args = InferArgvex<typeof schema>
-// { _: string[]; __: string[]; size?: string[]; shots?: string[] }
-
-const brew = (args: Args) => {
-  const size = args.size?.[0] ?? "medium"
-  // ...
+const options: Options = {
+  argv: ["--size", "large"],
+  schema: { size: { arity: 1 } },
 }
+const args = argvex(options)
 ```
+
+**`ArgvEx`** — the return type of `argvex()`. Every flag is `string[]`, plus `_` for positionals and `__` for unknown flags:
+
+```typescript
+import argvex, { ArgvEx } from "argvex"
+
+const args: ArgvEx = argvex()
+```
+
+**`ParseError`** and **`ErrorCode`** — see [Error handling](#error-handling).
 
 Common Patterns
 ----------------
@@ -480,28 +465,6 @@ const args = argvex({ schema })
 const useColor = !args["no-color"]
 ```
 
-#### Subcommand delegation
-
-Use `stopEarly` to grab the subcommand and forward the rest.
-
-```typescript
-const args = argvex({
-    argv: ["--verbose", "build", "--target", "es2020", "--minify"],
-    stopEarly: true,
-})
-// args -> { _: [ "build", "--target", "es2020", "--minify" ], verbose: [] }
-
-const [ subcommand, ...rest ] = args._
-
-if (subcommand === "build") {
-    const buildArgs = argvex({
-        argv: rest,
-        schema: { target: { arity: 1 }, minify: { arity: 0 } },
-    })
-    // buildArgs -> { _: [], __: [], target: [ "es2020" ], minify: [] }
-}
-```
-
 #### Error handling
 
 ```typescript
@@ -523,13 +486,13 @@ try {
 
 | Property | Type | Description |
 |---|---|---|
-| `.code` | `ParseErrorCode` | Machine-readable error code (see below) |
-| `.argument` | `string` | The bare flag or schema key that caused the error (no dash prefix) |
+| `.code` | `ErrorCode` | Machine-readable error code (see below) |
+| `.argument` | `string` | The raw token or schema key that caused the error |
 
 **Error codes:**
 
 | Code | Thrown when |
 |---|---|
-| `INVALID_FORMAT` | A malformed argument is encountered (e.g. `---triple-dash`) |
+| `INVALID_INPUT` | A malformed argument is encountered (e.g. `---triple-dash`) |
 | `INVALID_SCHEMA` | A schema definition is invalid (bad alias, reserved name, etc.) |
-| `RESERVED_NAME` | A flag named `_` or `__` is passed (conflicts with reserved keys) |
+| `RESERVED_KEYWORD` | A flag named `_` or `__` is passed (conflicts with reserved keys) |

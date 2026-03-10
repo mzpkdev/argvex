@@ -1,3 +1,5 @@
+export { ErrorCode, ParseError } from "./ParseError"
+export type { Schema } from "./schema"
 import { parse, type Schema, validate } from "./schema"
 import { extract, TokenType, tokenize } from "./token"
 
